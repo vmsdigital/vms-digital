@@ -217,8 +217,6 @@ export default function CriarSitePage() {
       setProgressMsg(PROGRESS_MESSAGES[i]);
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
     const supabase = createClient();
     const {
       data: { user },
@@ -240,6 +238,39 @@ export default function CriarSitePage() {
       setShowOverlay(false);
       setGerandoSite(false);
       return;
+    }
+
+    setProgressMsg("Gerando seu site com inteligência artificial...");
+
+    let htmlGerado = "";
+
+    try {
+      const res = await fetch("/api/sites/gerar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome_empresa: form.nome_empresa,
+          descricao: form.descricao,
+          objetivo: form.objetivo,
+          idioma: form.idioma,
+          nicho: form.nicho || "outro",
+          tem_logo: form.tem_logo,
+          cor_primaria: form.cor_primaria,
+          cor_secundaria: form.cor_secundaria,
+          tema: form.tema,
+          endereco: form.sem_endereco ? "" : form.endereco,
+          instagram: form.instagram,
+          facebook: form.facebook,
+          whatsapp: form.whatsapp,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        htmlGerado = data.html || "";
+      }
+    } catch {
+      htmlGerado = "";
     }
 
     const slug = form.nome_empresa
@@ -267,6 +298,7 @@ export default function CriarSitePage() {
         instagram: form.instagram,
         facebook: form.facebook,
         whatsapp: form.whatsapp,
+        html_gerado: htmlGerado,
       },
     });
 

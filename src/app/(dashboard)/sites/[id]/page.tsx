@@ -19,7 +19,7 @@ import { createClient } from "@/lib/supabase/client";
 import { NICHOS } from "@/lib/constants";
 import type { Site } from "@/types/database";
 
-type Tab = "geral" | "conteudo" | "aparencia";
+type Tab = "geral" | "conteudo" | "aparencia" | "preview";
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("pt-BR", {
@@ -38,6 +38,7 @@ export default function SiteDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("geral");
   const [saving, setSaving] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string>("");
 
   const [editNome, setEditNome] = useState("");
   const [editNicho, setEditNicho] = useState("");
@@ -63,9 +64,13 @@ export default function SiteDetailPage() {
         if (data.dados_json) {
           const flat: Record<string, string> = {};
           Object.entries(data.dados_json).forEach(([key, val]) => {
-            if (typeof val === "string") flat[key] = val;
+            if (typeof val === "string" && key !== "html_gerado") flat[key] = val;
           });
           setEditConteudo(flat);
+          const dados = data.dados_json as Record<string, unknown>;
+          if (dados.html_gerado) {
+            setPreviewHtml(dados.html_gerado as string);
+          }
         }
       }
       setLoading(false);
@@ -161,6 +166,7 @@ export default function SiteDetailPage() {
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: "geral", label: "Geral", icon: <Settings2 size={14} /> },
+    { key: "preview", label: "Preview", icon: <Eye size={14} /> },
     { key: "conteudo", label: "Conteúdo", icon: <FileText size={14} /> },
     { key: "aparencia", label: "Aparência", icon: <Palette size={14} /> },
   ];
@@ -202,7 +208,7 @@ export default function SiteDetailPage() {
               <Globe size={14} className="mr-1.5" />
               {site.publicado ? "Despublicar" : "Publicar"}
             </Button>
-            <Button variant="secondary" size="sm">
+            <Button variant="secondary" size="sm" onClick={() => setActiveTab("preview")}>
               <Eye size={14} className="mr-1.5" />
               Visualizar
             </Button>
@@ -276,6 +282,58 @@ export default function SiteDetailPage() {
               <Button onClick={handleSaveGeral} disabled={saving}>
                 Salvar alterações
               </Button>
+            </div>
+          )}
+
+          {activeTab === "preview" && (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-vms-texto text-sm font-medium">
+                  Preview do site
+                </h2>
+                <div className="flex gap-2">
+                  {previewHtml && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        const blob = new Blob([previewHtml], { type: "text/html" });
+                        const url = URL.createObjectURL(blob);
+                        window.open(url, "_blank");
+                      }}
+                    >
+                      <ExternalLink size={14} className="mr-1.5" />
+                      Abrir em nova aba
+                    </Button>
+                  )}
+                </div>
+              </div>
+              {previewHtml ? (
+                <div className="rounded-xl border border-vms-borda overflow-hidden">
+                  <div className="bg-vms-dark-1 px-4 py-2 flex items-center gap-2 border-b border-vms-borda">
+                    <div className="flex gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-red-500/60" />
+                      <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
+                      <div className="w-3 h-3 rounded-full bg-green-500/60" />
+                    </div>
+                    <div className="flex-1 text-center">
+                      <span className="text-vms-dark-5 text-xs">{editSlug || "site.vmsdigital.com.br"}</span>
+                    </div>
+                  </div>
+                  <iframe
+                    srcDoc={previewHtml}
+                    className="w-full h-[600px] bg-white"
+                    sandbox="allow-scripts"
+                    title="Preview do site"
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                  <Globe size={32} className="text-vms-muted opacity-40" />
+                  <p className="text-vms-muted text-sm">Nenhum site gerado ainda</p>
+                  <p className="text-vms-dark-5 text-xs">O site será gerado pela IA após a criação</p>
+                </div>
+              )}
             </div>
           )}
 
