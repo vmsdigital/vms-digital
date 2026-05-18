@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Globe, CheckCircle, DollarSign, TrendingUp } from "lucide-react";
 import {
@@ -35,45 +35,63 @@ export default function DashboardPage() {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchData() {
-      const supabase = createClient();
+  const fetchData = useCallback(async () => {
+    const supabase = createClient();
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-      let usuario: Usuario | null = null;
-      if (user) {
-        const { data: userData } = await supabase
-          .from("usuarios")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-        usuario = userData;
-      }
+    if (!user) return;
 
-      const { data: sites } = await supabase
+    const [usuarioRes, sitesRes, clientesRes] = await Promise.all([
+      supabase.from("usuarios").select("*").eq("id", user.id).single(),
+      supabase
         .from("sites")
         .select("*")
-        .eq("criador_id", user?.id ?? "")
-        .order("criado_em", { ascending: false });
+        .eq("criador_id", user.id)
+        .order("criado_em", { ascending: false }),
+      supabase.from("clientes").select("*").eq("criador_id", user.id),
+    ]);
 
-      const { data: clientes } = await supabase
-        .from("clientes")
-        .select("*")
-        .eq("criador_id", user?.id ?? "");
-
-      setData({
-        usuario,
-        sites: sites ?? [],
-        clientes: clientes ?? [],
-      });
-      setLoading(false);
-    }
-
-    fetchData();
+    setData({
+      usuario: usuarioRes.data,
+      sites: sitesRes.data ?? [],
+      clientes: clientesRes.data ?? [],
+    });
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel("dashboard-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "sites" },
+        () => fetchData()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "clientes" },
+        () => fetchData()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "propostas" },
+        () => fetchData()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchData]);
 
   if (loading) {
     return (
