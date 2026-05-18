@@ -38,6 +38,7 @@ export default function ProspeccaoPage() {
   const [jaBuscou, setJaBuscou] = useState(false);
   const [semCreditos, setSemCreditos] = useState(false);
   const [plano, setPlano] = useState<PlanoKey>("gratuito");
+  const [cargo, setCargo] = useState<string>("criador");
   const [prospeccoesMes, setProspeccoesMes] = useState(0);
   const [demoModal, setDemoModal] = useState<ProspeccaoResultado | null>(null);
   const [fonte, setFonte] = useState<string>("");
@@ -50,10 +51,13 @@ export default function ProspeccaoPage() {
       if (user) {
         const { data } = await supabase
           .from("usuarios")
-          .select("plano")
+          .select("plano, cargo")
           .eq("id", user.id)
           .single();
-        if (data) setPlano(data.plano as PlanoKey);
+        if (data) {
+          setPlano(data.plano as PlanoKey);
+          if (data.cargo) setCargo(data.cargo);
+        }
 
         const inicioMes = new Date();
         inicioMes.setDate(1);
@@ -71,7 +75,7 @@ export default function ProspeccaoPage() {
 
   async function handleBuscar(e: React.FormEvent) {
     e.preventDefault();
-    if (!podeProcurar(plano, prospeccoesMes)) {
+    if (!podeProcurar(plano, prospeccoesMes, cargo)) {
       setSemCreditos(true);
       return;
     }

@@ -27,15 +27,6 @@ interface DashboardData {
   clientes: Cliente[];
 }
 
-const revenueData = [
-  { mes: "Dez", receita: 0 },
-  { mes: "Jan", receita: 197 },
-  { mes: "Fev", receita: 394 },
-  { mes: "Mar", receita: 591 },
-  { mes: "Abr", receita: 788 },
-  { mes: "Mai", receita: 985 },
-];
-
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData>({
     usuario: null,
@@ -112,6 +103,22 @@ export default function DashboardPage() {
   );
 
   const recentSites = sites.slice(0, 5);
+
+  const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  const agora = new Date();
+  const revenueData = Array.from({ length: 6 }, (_, i) => {
+    const mesIdx = (agora.getMonth() - 5 + i + 12) % 12;
+    const ano = agora.getMonth() - 5 + i < 0 ? agora.getFullYear() - 1 : agora.getFullYear();
+    const inicio = new Date(ano, mesIdx, 1);
+    const fim = new Date(ano, mesIdx + 1, 0);
+    const receita = clientes
+      .filter((c) => {
+        const d = new Date(c.criado_em);
+        return d >= inicio && d <= fim && (c.status === "ativo" || c.status === "trial");
+      })
+      .reduce((acc, c) => acc + (c.valor_mensal ?? 0), 0);
+    return { mes: meses[mesIdx], receita };
+  });
 
   return (
     <DashboardLayout title="Dashboard">
