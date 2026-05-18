@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
+import { createClient } from "@/lib/supabase/client";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -14,6 +16,29 @@ export default function DashboardLayout({
   title = "Dashboard",
 }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [authed, setAuthed] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    async function check() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.replace("/login");
+      } else {
+        setAuthed(true);
+      }
+    }
+    check();
+  }, [router]);
+
+  if (!authed) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-vms-fundo">
+        <div className="w-6 h-6 border-2 border-vms-primaria border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-vms-fundo relative">
