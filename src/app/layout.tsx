@@ -21,8 +21,35 @@ const bebasNeue = Bebas_Neue({
 });
 
 export const metadata: Metadata = {
-  title: "Startzy",
-  description: "Plataforma de criação e gestão de sites com IA",
+  title: {
+    default: "Startzy — Crie sites com IA e fature como agência",
+    template: "%s | Startzy",
+  },
+  description:
+    "Crie sites profissionais em minutos com IA. Prospecção, criação e gestão — tudo em uma plataforma para agências digitais.",
+  metadataBase: new URL("https://startzy.com.br"),
+  alternates: {
+    canonical: "https://startzy.com.br",
+  },
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    url: "https://startzy.com.br",
+    siteName: "Startzy",
+    title: "Startzy — Crie sites com IA e fature como agência",
+    description:
+      "Crie sites profissionais em minutos com IA. Prospecção, criação e gestão — tudo em uma plataforma.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Startzy — Crie sites com IA e fature como agência",
+    description:
+      "Crie sites profissionais em minutos com IA. Prospecção, criação e gestão — tudo em uma plataforma.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   icons: {
     icon: "/favicon.svg",
   },

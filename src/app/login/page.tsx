@@ -15,6 +15,12 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowIntro(false), 3200);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const urlError = searchParams.get("error");
@@ -76,7 +82,17 @@ function LoginForm() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-vms-fundo px-4">
+    <>
+      {showIntro && (
+        <div className="intro-overlay">
+          <img
+            src="/animacao-entrada.gif"
+            alt="Startzy"
+            className="intro-gif"
+          />
+        </div>
+      )}
+      <div className={`relative flex min-h-screen items-center justify-center overflow-hidden bg-vms-fundo px-4${showIntro ? " login-hidden" : ""}`}>
       <div className="absolute inset-0 bg-grid opacity-40" />
       <div className="absolute left-1/4 top-1/4 h-[500px] w-[500px] rounded-full bg-vms-primaria/[0.03] blur-[140px]" style={{ animation: "glow-breathe 8s ease-in-out infinite" }} />
       <div className="absolute bottom-1/4 right-1/4 h-[400px] w-[400px] rounded-full bg-vms-primaria/[0.02] blur-[100px]" style={{ animation: "glow-breathe 10s ease-in-out infinite 2s" }} />
@@ -189,6 +205,7 @@ function LoginForm() {
         </p>
       </div>
     </div>
+    </>
   );
 }
 

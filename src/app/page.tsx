@@ -26,12 +26,6 @@ export default function LandingPage() {
   const cursorRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
   const [activeSection, setActiveSection] = useState("");
-  const [showIntro, setShowIntro] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShowIntro(false), 3200);
-    return () => clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     const cursor = cursorRef.current;
@@ -128,17 +122,7 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <>
-      {showIntro && (
-        <div className="intro-overlay">
-          <img
-            src="/animacao-entrada.gif"
-            alt="Startzy"
-            className="intro-gif"
-          />
-        </div>
-      )}
-      <div className={`landing-page${showIntro ? " landing-hidden" : ""}`}>
+    <div className="landing-page">
       <Script
         src="https://unpkg.com/@phosphor-icons/web@2.1.1"
         strategy="beforeInteractive"
@@ -148,14 +132,16 @@ export default function LandingPage() {
       <div className="cursor-ring" ref={ringRef} />
       <div className="ambient amb-1" />
       <div className="ambient amb-2" />
+      <div className="ambient amb-3" />
+      <div className="ambient amb-4" />
 
       <nav>
         <a href="https://vmsdigital.com.br" className="nav-logo">
           <Image
             src="/logo-startzy.svg"
             alt="Startzy"
-            width={160}
-            height={44}
+            width={180}
+            height={50}
             className="nav-logo-svg"
           />
         </a>
@@ -726,8 +712,8 @@ export default function LandingPage() {
               <Image
                 src="/logo-startzy.svg"
                 alt="Startzy"
-                width={140}
-                height={40}
+                width={160}
+                height={46}
                 className="footer-logo-svg"
               />
               <p>Crie sites com IA e fature como agência digital.</p>
@@ -776,6 +762,5 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
-    </>
   );
 }
