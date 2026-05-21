@@ -11,10 +11,13 @@ export function ProgressBar({ value, max, color }: ProgressBarProps) {
   const barColor = color ?? (pct >= 90 ? "bg-vms-erro" : "bg-vms-primaria");
 
   return (
-    <div className="h-[3px] bg-vms-dark-2 rounded-full w-full overflow-hidden">
+    <div className="h-[2px] bg-vms-primaria-dim rounded-full w-full overflow-hidden">
       <div
-        className={`h-full rounded-full transition-all duration-300 ${barColor}`}
-        style={{ width: `${pct}%` }}
+        className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+        style={{
+          width: `${pct}%`,
+          boxShadow: pct >= 90 ? "0 0 6px #FF4444" : "0 0 6px #C8F135",
+        }}
       />
     </div>
   );

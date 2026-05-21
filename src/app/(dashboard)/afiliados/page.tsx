@@ -1,61 +1,55 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { createClient } from "@/lib/supabase/client";
-import { podeUsarAfiliados } from "@/lib/plan-limits";
-import type { Usuario } from "@/types/database";
+import { isAdmin } from "@/lib/plan-limits";
+import type { Usuario, Cliente, Site } from "@/types/database";
 import {
   Users,
-  Clock,
-  CheckCircle,
   DollarSign,
+  Globe,
+  TrendingUp,
   Copy,
   Check,
-  TrendingUp,
-  Lock,
-  Zap,
+  Store,
+  UserPlus,
+  ShoppingBag,
 } from "lucide-react";
-
-interface Indicado {
-  id: string;
-  nome: string;
-  email: string;
-  plano: string;
-  comissao: number;
-  status: "pendente" | "pago";
-}
-
-const indicadosMock: Indicado[] = [
-  { id: "1", nome: "Carlos Mendes", email: "carlos@email.com", plano: "Pro", comissao: 29.1, status: "pago" },
-  { id: "2", nome: "Ana Beatriz", email: "ana@email.com", plano: "Starter", comissao: 14.1, status: "pendente" },
-  { id: "3", nome: "Roberto Lima", email: "roberto@email.com", plano: "Agency", comissao: 59.1, status: "pago" },
-  { id: "4", nome: "Fernanda Alves", email: "fernanda@email.com", plano: "Pro", comissao: 29.1, status: "pendente" },
-  { id: "5", nome: "Lucas Santos", email: "lucas@email.com", plano: "Starter", comissao: 14.1, status: "pago" },
-];
+import { Button } from "@/components/ui/Button";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export default function AfiliadosPage() {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [tab, setTab] = useState<"vendas" | "revendedores">("vendas");
 
-  useEffect(() => {
-    async function loadUser() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from("usuarios")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-        if (data) setUsuario(data as Usuario);
-      }
-    }
-    loadUser();
+  const fetchData = useCallback(async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const [usuarioRes, clientesRes, sitesRes] = await Promise.all([
+      supabase.from("usuarios").select("*").eq("id", user.id).single(),
+      supabase.from("clientes").select("*").eq("criador_id", user.id).order("criado_em", { ascending: false }),
+      supabase.from("sites").select("*").eq("criador_id", user.id).order("criado_em", { ascending: false }),
+    ]);
+
+    if (usuarioRes.data) setUsuario(usuarioRes.data as Usuario);
+    setClientes(clientesRes.data ?? []);
+    setSites(sitesRes.data ?? []);
+    setLoading(false);
   }, []);
 
-  const podeAfiliados = usuario ? podeUsarAfiliados(usuario.plano) : false;
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const isAdm = usuario ? isAdmin(usuario.cargo) : false;
   const referralLink = usuario
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/cadastro?ref=${usuario.id}`
     : "";
@@ -66,154 +60,222 @@ export default function AfiliadosPage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  if (!podeAfiliados) {
+  const clientesAtivos = clientes.filter((c) => c.status === "ativo");
+  const clientesTrial = clientes.filter((c) => c.status === "trial");
+  const receitaTotal = clientesAtivos.reduce((acc, c) => acc + (c.valor_mensal ?? 0), 0);
+  const sitesPublicados = sites.filter((s) => s.publicado);
+
+  if (loading) {
     return (
-      <DashboardLayout title="Afiliados">
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="rounded-2xl border border-vms-borda bg-vms-card p-10 text-center max-w-md">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-vms-purple-bg">
-              <Lock size={28} className="text-vms-purple-light" />
-            </div>
-            <h2 className="mb-2 text-lg font-semibold text-vms-texto">
-              Recurso exclusivo
-            </h2>
-            <p className="mb-6 text-sm text-vms-muted">
-              O programa de afiliados está disponível apenas para os planos Pro e Agency. Faça upgrade para começar a ganhar com indicações.
-            </p>
-            <button className="inline-flex items-center gap-2 rounded-lg bg-vms-primaria px-6 py-2.5 text-sm font-medium text-black hover:brightness-110 transition-all">
-              <Zap size={16} />
-              Fazer upgrade para Pro
-            </button>
-          </div>
+      <DashboardLayout title="Vendas">
+        <div className="flex items-center justify-center h-64">
+          <div className="w-6 h-6 border-2 border-vms-primaria border-t-transparent rounded-full animate-spin" />
         </div>
       </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout title="Afiliados">
+    <DashboardLayout title="Vendas">
       <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-vms-texto text-xl font-semibold">Vendas & Revendedores</h1>
+            <p className="text-vms-muted text-sm mt-1">Gerencie suas vendas de sites e programa de revendedores</p>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard
+            icon={<Globe size={14} />}
+            label="Sites Publicados"
+            value={sitesPublicados.length}
+            sub={`de ${sites.length} criados`}
+            green
+          />
+          <MetricCard
             icon={<Users size={14} />}
-            label="Total Indicados"
-            value="12"
-            sub="+3 este mês"
-            green
-          />
-          <MetricCard
-            icon={<Clock size={14} />}
-            label="Comissões Pendentes"
-            value="R$ 43,20"
-          />
-          <MetricCard
-            icon={<CheckCircle size={14} />}
-            label="Comissões Pagas"
-            value="R$ 312,60"
-            green
+            label="Clientes Ativos"
+            value={clientesAtivos.length}
+            sub={`${clientesTrial.length} em trial`}
           />
           <MetricCard
             icon={<DollarSign size={14} />}
-            label="Total Ganho"
-            value="R$ 355,80"
+            label="Receita Mensal"
+            value={`R$ ${receitaTotal.toLocaleString("pt-BR")}`}
+            green
+          />
+          <MetricCard
+            icon={<ShoppingBag size={14} />}
+            label="Total de Vendas"
+            value={clientes.length}
+            sub="Todos os clientes"
           />
         </div>
 
-        <div className="glass-card rounded-2xl p-5">
-          <h2 className="mb-3 text-sm font-medium text-vms-texto">Seu Link de Indicação</h2>
-          <div className="flex gap-2">
-            <div className="flex-1 rounded-lg border border-vms-borda bg-vms-fundo px-4 py-2.5 text-sm text-vms-primaria truncate">
-              {referralLink}
-            </div>
+        <div className="flex gap-1 rounded-[10px] glass-card-premium p-1">
+          {(["vendas", "revendedores"] as const).map((t) => (
             <button
-              onClick={handleCopy}
-              className="inline-flex items-center gap-2 rounded-lg bg-vms-primaria px-4 py-2.5 text-sm font-medium text-black hover:brightness-110 transition-all shrink-0"
+              key={t}
+              onClick={() => setTab(t)}
+              className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                tab === t ? "bg-vms-primaria text-black" : "text-vms-muted hover:text-vms-texto-2"
+              }`}
             >
-              {copied ? <Check size={16} /> : <Copy size={16} />}
-              {copied ? "Copiado!" : "Copiar"}
+              {t === "vendas" ? "Minhas Vendas" : "Revendedores"}
             </button>
-          </div>
+          ))}
         </div>
 
-        <div className="glass-card rounded-2xl">
-          <div className="border-b border-vms-borda p-4">
-            <h2 className="text-sm font-medium text-vms-texto">Indicações</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-vms-borda">
-                  <th className="px-4 py-3 text-left text-xs font-medium text-vms-muted">Nome</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-vms-muted">E-mail</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-vms-muted">Plano</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-vms-muted">Comissão</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-vms-muted">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {indicadosMock.map((ind) => (
-                  <tr key={ind.id} className="border-b border-vms-borda last:border-0 hover:bg-vms-primaria-hover transition-colors">
-                    <td className="px-4 py-3 text-vms-texto-2">{ind.nome}</td>
-                    <td className="px-4 py-3 text-vms-muted">{ind.email}</td>
-                    <td className="px-4 py-3">
-                      <span className="rounded bg-vms-primaria-20 px-2 py-0.5 text-xs font-medium text-vms-primaria">
-                        {ind.plano}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-vms-texto font-medium">
-                      R$ {ind.comissao.toFixed(2).replace(".", ",")}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                        ind.status === "pago"
-                          ? "bg-vms-primaria-20 text-vms-primaria"
-                          : "bg-vms-blue-bg text-vms-blue-light"
-                      }`}>
-                        {ind.status === "pago" ? "Pago" : "Pendente"}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        {tab === "vendas" && (
+          <>
+            <div className="glass-card-premium rounded-[14px] p-5">
+              <h2 className="mb-3 text-sm font-medium text-vms-texto">Link de Venda</h2>
+              <p className="text-vms-muted text-xs mb-3">Compartilhe este link para que novos clientes se cadastrem e comprem sites</p>
+              <div className="flex gap-2">
+                <div className="flex-1 rounded-[8px] border border-vms-borda bg-vms-fundo px-4 py-2.5 text-sm text-vms-primaria truncate">
+                  {referralLink}
+                </div>
+                <button
+                  onClick={handleCopy}
+                  className="inline-flex items-center gap-2 rounded-[8px] bg-vms-primaria px-4 py-2.5 text-sm font-medium text-black hover:brightness-110 transition-all shrink-0"
+                >
+                  {copied ? <Check size={16} /> : <Copy size={16} />}
+                  {copied ? "Copiado!" : "Copiar"}
+                </button>
+              </div>
+            </div>
 
-        <div className="glass-card rounded-2xl p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp size={18} className="text-vms-primaria" />
-            <h2 className="text-sm font-medium text-vms-texto">Como funciona</h2>
+            <div className="glass-card-premium rounded-[14px]">
+              <div className="border-b border-vms-borda p-4">
+                <h2 className="text-sm font-medium text-vms-texto">Clientes & Vendas</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-vms-borda">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-vms-muted">Cliente</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-vms-muted">WhatsApp</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-vms-muted">Plano</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-vms-muted">Valor</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-vms-muted">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clientes.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="text-center py-8 text-vms-muted text-sm">
+                          Nenhuma venda ainda. Compartilhe seu link!
+                        </td>
+                      </tr>
+                    ) : (
+                      clientes.map((c) => (
+                        <tr key={c.id} className="border-b border-vms-borda last:border-0 hover:bg-vms-primaria-hover transition-colors">
+                          <td className="px-4 py-3 text-vms-texto-2">{c.nome}</td>
+                          <td className="px-4 py-3 text-vms-muted">{c.whatsapp}</td>
+                          <td className="px-4 py-3">
+                            <span className="rounded bg-vms-primaria-20 px-2 py-0.5 text-xs font-medium text-vms-primaria">
+                              {c.plano_tipo || "—"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-vms-texto font-medium">
+                            {c.valor_mensal ? `R$ ${c.valor_mensal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusBadge status={c.status} />
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="glass-card-premium rounded-[14px] p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp size={18} className="text-vms-primaria" />
+                <h2 className="text-sm font-medium text-vms-texto">Como vender mais</h2>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="rounded-[8px] bg-vms-fundo p-4">
+                  <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-vms-primaria-20 text-sm font-bold text-vms-primaria">1</div>
+                  <h3 className="mb-1 text-sm font-medium text-vms-texto">Compartilhe seu link</h3>
+                  <p className="text-xs text-vms-muted">Envie para empresários que precisam de um site profissional.</p>
+                </div>
+                <div className="rounded-[8px] bg-vms-fundo p-4">
+                  <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-vms-primaria-20 text-sm font-bold text-vms-primaria">2</div>
+                  <h3 className="mb-1 text-sm font-medium text-vms-texto">Use a Prospecção</h3>
+                  <p className="text-xs text-vms-muted">Encontre empresas sem site e ofereça nossos serviços.</p>
+                </div>
+                <div className="rounded-[8px] bg-vms-fundo p-4">
+                  <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-vms-primaria-20 text-sm font-bold text-vms-primaria">3</div>
+                  <h3 className="mb-1 text-sm font-medium text-vms-texto">Feche negócio</h3>
+                  <p className="text-xs text-vms-muted">Crie o site, adicione o cliente e comece a receber.</p>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {tab === "revendedores" && (
+          <div className="glass-card-premium rounded-[14px] p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-vms-primaria-20">
+                <Store size={20} className="text-vms-primaria" />
+              </div>
+              <div>
+                <h2 className="text-vms-texto text-base font-medium">Programa de Revendedores</h2>
+                <p className="text-vms-muted text-xs">Revenda sites da VMS Digital e ganhe comissões</p>
+              </div>
+            </div>
+
+            <div className="rounded-[10px] border border-vms-borda bg-vms-fundo p-5 mb-6">
+              <h3 className="text-vms-texto text-sm font-medium mb-3">Como funciona</h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="flex gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-vms-primaria-20 text-sm font-bold text-vms-primaria">1</div>
+                  <div>
+                    <h4 className="text-vms-texto text-sm font-medium">Cadastre-se como revendedor</h4>
+                    <p className="text-vms-muted text-xs">Solicite seu acesso ao programa de revendedores.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-vms-primaria-20 text-sm font-bold text-vms-primaria">2</div>
+                  <div>
+                    <h4 className="text-vms-texto text-sm font-medium">Venda sites</h4>
+                    <p className="text-vms-muted text-xs">Use seu link exclusivo para vender sites para seus clientes.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-vms-primaria-20 text-sm font-bold text-vms-primaria">3</div>
+                  <div>
+                    <h4 className="text-vms-texto text-sm font-medium">Ganhe 30%</h4>
+                    <p className="text-vms-muted text-xs">Comissão sobre cada pagamento do cliente que você indicou.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between rounded-[10px] border border-vms-primaria/30 bg-vms-primaria-20/30 p-4">
+              <div>
+                <p className="text-vms-texto text-sm font-medium">Quer ser um revendedor?</p>
+                <p className="text-vms-muted text-xs">Solicite acesso e comece a ganhar com cada venda.</p>
+              </div>
+              <Button size="sm">
+                <UserPlus size={14} className="mr-1.5" />
+                Solicitar acesso
+              </Button>
+            </div>
+
+            {isAdm && (
+              <div className="mt-6 rounded-[10px] border border-vms-blue/30 bg-vms-blue-bg/30 p-4">
+                <p className="text-vms-blue-light text-sm font-medium">Modo Admin</p>
+                <p className="text-vms-muted text-xs mt-1">Como admin, você pode gerenciar todos os revendedores, aprovar cadastros e definir comissões.</p>
+              </div>
+            )}
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="rounded-lg bg-vms-fundo p-4">
-              <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-vms-primaria-20 text-sm font-bold text-vms-primaria">
-                1
-              </div>
-              <h3 className="mb-1 text-sm font-medium text-vms-texto">Compartilhe seu link</h3>
-              <p className="text-xs text-vms-muted">
-                Envie seu link exclusivo para amigos, clientes e contatos.
-              </p>
-            </div>
-            <div className="rounded-lg bg-vms-fundo p-4">
-              <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-vms-primaria-20 text-sm font-bold text-vms-primaria">
-                2
-              </div>
-              <h3 className="mb-1 text-sm font-medium text-vms-texto">Eles se cadastram</h3>
-              <p className="text-xs text-vms-muted">
-                Quando alguém se cadastra pelo seu link, a indicação é registrada automaticamente.
-              </p>
-            </div>
-            <div className="rounded-lg bg-vms-fundo p-4">
-              <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-vms-primaria-20 text-sm font-bold text-vms-primaria">
-                3
-              </div>
-              <h3 className="mb-1 text-sm font-medium text-vms-texto">Ganhe 30%</h3>
-              <p className="text-xs text-vms-muted">
-                Você recebe 30% de comissão sobre cada pagamento do indicado. Ele paga 70%, você ganha 30%.
-              </p>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     </DashboardLayout>
   );

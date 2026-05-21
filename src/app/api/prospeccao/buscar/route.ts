@@ -1,179 +1,121 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BIZDATA_BASE = "https://bizdata-web.vercel.app/api";
-
-const NICHO_TO_CATEGORY: Record<string, string> = {
-  provedor: "electronics",
-  advocacia: "lawyer",
-  academia: "gym",
-  clinica: "doctor",
-  dentista: "dentist",
-  restaurante: "restaurant",
-  padaria: "bakery",
-  bar: "bar",
-  salao: "hairdresser",
-  beleza: "beauty",
-  loja: "clothing",
-  imobiliaria: "real_estate",
-  autopecas: "car_repair",
-  concessionaria: "car_dealer",
-  petshop: "pet_shop",
-  construcao: "furniture",
-  farmacia: "pharmacy",
-  supermercado: "supermarket",
-  hotel: "hotel",
-  hostel: "hostel",
-  banco: "bank",
-  seguro: "insurance",
-  escola: "school",
-  universidade: "university",
-  coworking: "coworking",
-  cafe: "cafe",
-  livraria: "bookstore",
-  floricultura: "florist",
-  cinema: "cinema",
-  teatro: "theatre",
-  museu: "museum",
-  galeria: "gallery",
-  posto: "gas_station",
-  estacionamento: "parking",
-  contabilidade: "accountant",
-  hospital: "hospital",
-  hoteis: "guest_house",
-  outro: "restaurant",
+const NICHO_TO_OSM: Record<string, string> = {
+  provedor: "office|telecommunication",
+  advocacia: "office|lawyer",
+  academia: "leisure|fitness_centre",
+  clinica: "amenity|clinic",
+  dentista: "amenity|dentist",
+  restaurante: "amenity|restaurant",
+  padaria: "shop|bakery",
+  bar: "amenity|bar",
+  salao: "shop|hairdresser",
+  beleza: "shop|beauty",
+  loja: "shop|clothes",
+  imobiliaria: "office|estate_agent",
+  autopecas: "shop|car_parts",
+  concessionaria: "shop|car",
+  petshop: "shop|pet",
+  construcao: "shop|doityourself",
+  farmacia: "amenity|pharmacy",
+  supermercado: "shop|supermarket",
+  hotel: "tourism|hotel",
+  hostel: "tourism|hostel",
+  banco: "amenity|bank",
+  seguro: "office|insurance",
+  escola: "amenity|school",
+  universidade: "amenity|university",
+  coworking: "office|coworking",
+  cafe: "amenity|cafe",
+  livraria: "shop|books",
+  floricultura: "shop|florist",
+  cinema: "amenity|cinema",
+  teatro: "amenity|theatre",
+  museu: "tourism|museum",
+  galeria: "tourism|gallery",
+  posto: "amenity|fuel",
+  estacionamento: "amenity|parking",
+  contabilidade: "office|accountant",
+  hospital: "amenity|hospitals",
+  outro: "amenity|restaurant",
 };
 
-interface BizDataBusiness {
-  name: string;
-  address?: string;
-  phone?: string;
-  website?: string;
-  email?: string;
-  lat?: number;
-  lon?: number;
-  opening_hours?: string;
-  osm_id?: number;
+async function geocodeCity(cidade: string): Promise<{ lat: number; lon: number; display_name: string } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cidade)}&format=json&limit=1&countrycodes=br`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "VMS-Digital-Platform/1.0" },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.length) return null;
+    return {
+      lat: parseFloat(data[0].lat),
+      lon: parseFloat(data[0].lon),
+      display_name: data[0].display_name,
+    };
+  } catch {
+    return null;
+  }
 }
 
-interface GooglePlace {
-  place_id: string;
-  name: string;
-  formatted_address?: string;
-  formatted_phone_number?: string;
-  website?: string;
-  rating?: number;
-  user_ratings_total?: number;
-  geometry?: { location: { lat: number; lng: number } };
-}
+async function fetchOverpass(lat: number, lon: number, raioKm: number, segmento: string) {
+  const osmTag = NICHO_TO_OSM[segmento] || "amenity|restaurant";
+  const [osmKey, osmValue] = osmTag.split("|");
+  const radius = raioKm * 1000;
 
-async function fetchBizData(segmento: string, cidade: string, raioKm: number) {
-  const category = NICHO_TO_CATEGORY[segmento] || "business";
-
-  const url = `${BIZDATA_BASE}/businesses?location=${encodeURIComponent(cidade)}&category=${encodeURIComponent(category)}&limit=50`;
+  const query = `
+    [out:json][timeout:25];
+    (
+      node["${osmKey}"="${osmValue}"](around:${radius},${lat},${lon});
+      way["${osmKey}"="${osmValue}"](around:${radius},${lat},${lon});
+      relation["${osmKey}"="${osmValue}"](around:${radius},${lat},${lon});
+    );
+    out center body;
+  `;
 
   try {
-    const res = await fetch(url, {
-      signal: AbortSignal.timeout(10000),
+    const res = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      body: `data=${encodeURIComponent(query)}`,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!res.ok) return [];
 
     const data = await res.json();
+    if (!data.elements?.length) return [];
 
-    const businesses: BizDataBusiness[] = Array.isArray(data)
-      ? data
-      : data.businesses || [];
+    return data.elements
+      .map((el: { id: number; tags?: Record<string, string>; lat?: number; lon?: number; center?: { lat: number; lon: number } }) => {
+        const tags = el.tags || {};
+        const elLat = el.lat || el.center?.lat;
+        const elLon = el.lon || el.center?.lon;
+        const website = tags.website || tags["contact:website"] || "";
+        const phone = tags.phone || tags["contact:phone"] || "";
+        const instagram = tags["contact:instagram"] || "";
+        const facebook = tags["contact:facebook"] || "";
+        const redesSociais = [instagram, facebook].filter(Boolean);
 
-    if (!businesses.length) return [];
-
-    return businesses.map((b: BizDataBusiness, i: number) => ({
-      google_place_id: `osm_${b.osm_id || i}_${Date.now()}`,
-      nome: b.name || "Sem nome",
-      endereco: b.address || null,
-      telefone: b.phone || null,
-      avaliacao: null,
-      total_avaliacoes: null,
-      tem_site: !!(b.website && b.website.trim()),
-      site_url: (b.website && b.website.trim()) || null,
-      fonte: "openstreetmap" as const,
-    }));
-  } catch {
-    return [];
-  }
-}
-
-async function fetchGooglePlaces(segmento: string, cidade: string, raioKm: number) {
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-  if (!apiKey) return [];
-
-  const query = `${segmento} em ${cidade}`;
-
-  try {
-    const searchRes = await fetch(
-      `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&radius=${raioKm * 1000}&key=${apiKey}`,
-      { signal: AbortSignal.timeout(10000) }
-    );
-
-    if (!searchRes.ok) return [];
-
-    const searchData = await searchRes.json();
-    if (!searchData.results?.length) return [];
-
-    const places = searchData.results.slice(0, 20);
-
-    const detailed = await Promise.all(
-      places.map(async (place: { place_id: string; name: string; formatted_address?: string; rating?: number; user_ratings_total?: number; geometry?: { location: { lat: number; lng: number } } }) => {
-        try {
-          const detailRes = await fetch(
-            `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total&key=${apiKey}`,
-            { signal: AbortSignal.timeout(8000) }
-          );
-
-          if (!detailRes.ok) {
-            return {
-              google_place_id: place.place_id,
-              nome: place.name,
-              endereco: place.formatted_address || null,
-              telefone: null,
-              avaliacao: place.rating || null,
-              total_avaliacoes: place.user_ratings_total || null,
-              tem_site: false,
-              site_url: null,
-              fonte: "google" as const,
-            };
-          }
-
-          const detail = await detailRes.json();
-          const r = detail.result || {};
-
-          return {
-            google_place_id: place.place_id,
-            nome: r.name || place.name,
-            endereco: r.formatted_address || place.formatted_address || null,
-            telefone: r.formatted_phone_number || null,
-            avaliacao: r.rating || place.rating || null,
-            total_avaliacoes: r.user_ratings_total || place.user_ratings_total || null,
-            tem_site: !!r.website,
-            site_url: r.website || null,
-            fonte: "google" as const,
-          };
-        } catch {
-          return {
-            google_place_id: place.place_id,
-            nome: place.name,
-            endereco: place.formatted_address || null,
-            telefone: null,
-            avaliacao: place.rating || null,
-            total_avaliacoes: place.user_ratings_total || null,
-            tem_site: false,
-            site_url: null,
-            fonte: "google" as const,
-          };
-        }
+        return {
+          google_place_id: `osm_${el.id}`,
+          nome: tags.name || "Sem nome",
+          endereco: tags["addr:street"]
+            ? `${tags["addr:street"]}${tags["addr:housenumber"] ? `, ${tags["addr:housenumber"]}` : ""}${tags["addr:city"] ? ` - ${tags["addr:city"]}` : ""}`
+            : null,
+          telefone: phone || null,
+          avaliacao: null,
+          total_avaliacoes: null,
+          tem_site: !!(website && website.trim()),
+          site_url: (website && website.trim()) || null,
+          redes_sociais: redesSociais.length > 0 ? redesSociais : null,
+          lat: elLat || null,
+          lon: elLon || null,
+        };
       })
-    );
-
-    return detailed;
+      .filter((r: { nome: string }) => r.nome !== "Sem nome");
   } catch {
     return [];
   }
@@ -184,6 +126,9 @@ export async function GET(request: NextRequest) {
   const segmento = searchParams.get("segmento") || "";
   const cidade = searchParams.get("cidade") || "";
   const raioKm = parseInt(searchParams.get("raio_km") || "10", 10);
+  const pagina = parseInt(searchParams.get("pagina") || "1", 10);
+  const porPagina = 10;
+  const jaVistos = searchParams.get("ja_vistos") || "";
 
   if (!segmento || !cidade) {
     return NextResponse.json(
@@ -192,45 +137,73 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-  const useGoogle = !!apiKey;
-
-  let resultados: Array<{
-    google_place_id: string;
-    nome: string;
-    endereco: string | null;
-    telefone: string | null;
-    avaliacao: number | null;
-    total_avaliacoes: number | null;
-    tem_site: boolean;
-    site_url: string | null;
-    fonte: "google" | "openstreetmap";
-  }>;
-
-  if (useGoogle) {
-    resultados = await fetchGooglePlaces(segmento, cidade, raioKm);
-
-    if (resultados.length < 5) {
-      const osmResults = await fetchBizData(segmento, cidade, raioKm);
-      const existingIds = new Set(resultados.map((r) => r.nome.toLowerCase()));
-      const novos = osmResults.filter((r) => !existingIds.has(r.nome.toLowerCase()));
-      resultados = [...resultados, ...novos];
-    }
-  } else {
-    resultados = await fetchBizData(segmento, cidade, raioKm);
+  const geo = await geocodeCity(cidade);
+  if (!geo) {
+    return NextResponse.json(
+      { error: "Cidade não encontrada. Tente outro nome." },
+      { status: 404 }
+    );
   }
 
-  const ordenados = resultados.sort((a, b) => {
+  let resultados = await fetchOverpass(geo.lat, geo.lon, raioKm, segmento);
+
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (apiKey && resultados.length < 20) {
+    try {
+      const query = `${segmento} em ${cidade}`;
+      const searchRes = await fetch(
+        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&radius=${raioKm * 1000}&key=${apiKey}`,
+        { signal: AbortSignal.timeout(10000) }
+      );
+      if (searchRes.ok) {
+        const searchData = await searchRes.json();
+        if (searchData.results?.length) {
+          const existingIds = new Set(resultados.map((r: { google_place_id: string }) => r.google_place_id));
+          const googleResults = searchData.results.slice(0, 40).map((place: { place_id: string; name: string; formatted_address?: string; rating?: number; user_ratings_total?: number; geometry?: { location: { lat: number; lng: number } }; website?: string }) => ({
+            google_place_id: place.place_id,
+            nome: place.name,
+            endereco: place.formatted_address || null,
+            telefone: null,
+            avaliacao: place.rating || null,
+            total_avaliacoes: place.user_ratings_total || null,
+            tem_site: !!(place.website && place.website.trim()),
+            site_url: (place.website && place.website.trim()) || null,
+            redes_sociais: null,
+            lat: place.geometry?.location?.lat || null,
+            lon: place.geometry?.location?.lng || null,
+          })).filter((r: { google_place_id: string }) => !existingIds.has(r.google_place_id));
+          resultados = [...resultados, ...googleResults];
+        }
+      }
+    } catch {}
+  }
+
+  const vistosSet = new Set(jaVistos ? jaVistos.split(",") : []);
+  resultados = resultados.filter((r: { google_place_id: string }) => !vistosSet.has(r.google_place_id));
+
+  const ordenados = resultados.sort((a: { tem_site: boolean; total_avaliacoes: number | null; redes_sociais: string[] | null }, b: { tem_site: boolean; total_avaliacoes: number | null; redes_sociais: string[] | null }) => {
     if (!a.tem_site && b.tem_site) return -1;
     if (a.tem_site && !b.tem_site) return 1;
-    return 0;
+    const aTemRede = a.redes_sociais && a.redes_sociais.length > 0;
+    const bTemRede = b.redes_sociais && b.redes_sociais.length > 0;
+    if (aTemRede && !bTemRede) return -1;
+    if (!aTemRede && bTemRede) return 1;
+    const aAval = a.total_avaliacoes || 0;
+    const bAval = b.total_avaliacoes || 0;
+    return bAval - aAval;
   });
 
+  const total = ordenados.length;
+  const inicio = (pagina - 1) * porPagina;
+  const paginados = ordenados.slice(inicio, inicio + porPagina);
+
   return NextResponse.json({
-    resultados: ordenados,
-    total: ordenados.length,
-    fonte: useGoogle ? "google + openstreetmap" : "openstreetmap",
-    sem_site: ordenados.filter((r) => !r.tem_site).length,
-    com_site: ordenados.filter((r) => r.tem_site).length,
+    resultados: paginados,
+    total,
+    pagina,
+    total_paginas: Math.ceil(total / porPagina),
+    sem_site: ordenados.filter((r: { tem_site: boolean }) => !r.tem_site).length,
+    com_site: ordenados.filter((r: { tem_site: boolean }) => r.tem_site).length,
+    cidade_geo: { lat: geo.lat, lon: geo.lon, display_name: geo.display_name },
   });
 }

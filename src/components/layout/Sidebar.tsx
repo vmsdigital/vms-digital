@@ -1,6 +1,8 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -10,21 +12,25 @@ import {
   Send,
   Users,
   TrendingUp,
-  LayoutGrid,
   DollarSign,
-  Settings,
   HelpCircle,
   LogOut,
   Zap,
   X,
+  BarChart3,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { PLANOS, type PlanoKey } from "@/lib/constants";
+import { getUsoPercentual } from "@/lib/plan-limits";
+import type { Usuario } from "@/types/database";
 
 interface MenuItem {
   label: string;
   href: string;
   icon: LucideIcon;
   badge?: { text: string; variant: "green" | "red" | "purple" | "blue" } | { text: string; variant: "new" };
+  dataTour?: string;
 }
 
 interface MenuSection {
@@ -35,44 +41,12 @@ interface MenuSection {
 type BadgeVariant = "green" | "red" | "purple" | "blue" | "new";
 
 const badgeStyles: Record<BadgeVariant, string> = {
-  green: "bg-vms-primaria-20 text-vms-primaria",
+  green: "bg-vms-primaria text-vms-fundo font-bold",
   red: "bg-vms-red-bg text-vms-red-light",
   purple: "bg-vms-purple-bg text-vms-purple-light",
   blue: "bg-vms-blue-bg text-vms-blue-light",
-  new: "bg-vms-primaria-20 text-vms-primaria",
+  new: "bg-vms-primaria-dim text-vms-primaria border border-vms-primaria-border",
 };
-
-const menuSections: MenuSection[] = [
-  {
-    items: [
-      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { label: "Meus Sites", href: "/sites", icon: Globe, badge: { text: "12", variant: "green" } },
-      { label: "Criar Site", href: "/sites/novo", icon: CirclePlus, badge: { text: "novo", variant: "new" } },
-    ],
-  },
-  {
-    title: "Vendas",
-    items: [
-      { label: "Prospecção", href: "/prospeccao", icon: Search, badge: { text: "hot", variant: "red" } },
-      { label: "Propostas", href: "/propostas", icon: Send, badge: { text: "3", variant: "green" } },
-      { label: "Clientes", href: "/clientes", icon: Users },
-    ],
-  },
-  {
-    title: "Plataforma",
-    items: [
-      { label: "Afiliados", href: "/afiliados", icon: TrendingUp, badge: { text: "pro", variant: "purple" } },
-      { label: "Templates", href: "/templates", icon: LayoutGrid },
-      { label: "Financeiro", href: "/financeiro", icon: DollarSign },
-    ],
-  },
-  {
-    items: [
-      { label: "Configurações", href: "/configuracoes", icon: Settings },
-      { label: "Suporte", href: "/suporte", icon: HelpCircle },
-    ],
-  },
-];
 
 interface SidebarProps {
   open: boolean;
@@ -82,44 +56,134 @@ interface SidebarProps {
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
 
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [sitesCount, setSitesCount] = useState(0);
+  const [propostasPendentes, setPropostasPendentes] = useState(0);
+  const [clientesCount, setClientesCount] = useState(0);
+
+  const fetchData = useCallback(async () => {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const [usuarioRes, sitesRes, propostasRes, clientesRes] = await Promise.all([
+      supabase.from("usuarios").select("*").eq("id", user.id).single(),
+      supabase.from("sites").select("id", { count: "exact", head: true }).eq("criador_id", user.id),
+      supabase.from("propostas").select("id", { count: "exact", head: true }).eq("criador_id", user.id).in("status", ["gerado", "enviado", "negociando"]),
+      supabase.from("clientes").select("id", { count: "exact", head: true }).eq("criador_id", user.id),
+    ]);
+
+    if (usuarioRes.data) setUsuario(usuarioRes.data as Usuario);
+    setSitesCount(sitesRes.count ?? 0);
+    setPropostasPendentes(propostasRes.count ?? 0);
+    setClientesCount(clientesRes.count ?? 0);
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("sidebar-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "sites" }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "propostas" }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "clientes" }, () => fetchData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchData]);
+
+  const plano = (usuario?.plano ?? "gratuito") as PlanoKey;
+  const planoInfo = PLANOS[plano];
+
+  const limiteSites = planoInfo.sites;
+  const sitesLabel = limiteSites === Infinity ? `${sitesCount}/∞` : `${sitesCount}/${limiteSites}`;
+  const sitesPct = getUsoPercentual(sitesCount, limiteSites as number);
+
+  const menuSections: MenuSection[] = [
+    {
+      items: [
+        { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+        { label: "Meus Sites", href: "/sites", icon: Globe, badge: { text: String(sitesCount), variant: "green" } },
+        { label: "Criar Site", href: "/sites/novo", icon: CirclePlus, badge: { text: "NOVO", variant: "new" }, dataTour: "create-site" },
+      ],
+    },
+    {
+      title: "Vendas",
+      items: [
+        { label: "Prospecção", href: "/prospeccao", icon: Search },
+        { label: "Propostas", href: "/propostas", icon: Send, badge: propostasPendentes > 0 ? { text: String(propostasPendentes), variant: "green" } : undefined },
+        { label: "Clientes", href: "/clientes", icon: Users, badge: clientesCount > 0 ? { text: String(clientesCount), variant: "blue" } : undefined },
+      ],
+    },
+    {
+      title: "Plataforma",
+      items: [
+        { label: "Afiliados", href: "/afiliados", icon: TrendingUp, badge: planoInfo.afiliados ? { text: "PRO", variant: "purple" } : undefined },
+        { label: "Financeiro", href: "/financeiro", icon: DollarSign },
+        { label: "Relatórios", href: "/relatorios", icon: BarChart3 },
+      ],
+    },
+    {
+      items: [
+        { label: "Suporte", href: "/suporte", icon: HelpCircle, dataTour: "support" },
+      ],
+    },
+  ];
+
   return (
     <>
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
           onClick={onClose}
         />
       )}
 
       <aside
+        data-tour="sidebar"
         className={`
-          fixed top-0 left-0 z-50 flex h-screen w-[220px] flex-col
-          border-r border-vms-glass-border glass
+          fixed top-0 left-0 z-50 flex h-screen w-[228px] flex-col
+          border-r border-vms-glass-border bg-vms-sidebar
           transition-transform duration-200 ease-in-out
+          sidebar-lime-line relative
           lg:relative lg:z-auto lg:translate-x-0
+          animate-slide-right
           ${open ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-        <div className="flex h-[54px] items-center justify-between px-5">
-          <Link href="/dashboard" className="flex items-center gap-1">
-            <span className="text-xl font-bold text-vms-primaria">VMS</span>
-            <span className="text-xl font-bold text-vms-dark-5">DIGITAL</span>
+        <div className="flex h-[64px] items-center justify-between px-[22px] border-b border-vms-borda">
+          <Link href="/dashboard" className="flex items-center">
+            <Image
+              src="/logo-vms.svg"
+              alt="Startzy"
+              width={120}
+              height={36}
+              className="shrink-0 transition-transform duration-300 hover:scale-105"
+              priority
+            />
           </Link>
           <button
             onClick={onClose}
-            className="text-vms-muted hover:text-vms-texto lg:hidden"
+            className="text-vms-ghost hover:text-vms-texto lg:hidden transition-colors"
           >
             <X size={18} />
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-2">
+        <nav className="flex-1 overflow-y-auto py-[18px] scrollbar-none" style={{ scrollbarWidth: "none" }}>
           {menuSections.map((section, sIdx) => (
             <div key={sIdx}>
               {section.title && (
                 <>
                   {sIdx > 0 && <div className="my-2 border-t border-vms-borda" />}
-                  <span className="mb-1 mt-3 block px-3 text-[11px] font-semibold tracking-wider text-vms-muted uppercase">
+                  <span className="mb-1 mt-3 block px-[22px] py-[7px] text-[9px] font-medium tracking-[3.5px] uppercase text-vms-ghost">
                     {section.title}
                   </span>
                 </>
@@ -135,28 +199,30 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                     key={item.href}
                     href={item.href}
                     onClick={onClose}
+                    data-tour={item.dataTour}
+                    prefetch={false}
                     className={`
-                      group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium
-                      transition-colors duration-150
+                      group flex items-center gap-[10px] py-[9px] px-[22px] text-[13px] font-medium
+                      transition-all duration-150 relative
                       ${
                         isActive
-                          ? "bg-vms-primaria-20 text-vms-primaria"
-                          : "text-vms-texto-2 hover:bg-vms-primaria-hover hover:text-vms-texto-2"
+                          ? "text-vms-texto bg-vms-primaria-dim nav-active-indicator"
+                          : "text-vms-muted hover:text-vms-texto hover:bg-white/[0.03] hover:pl-[26px]"
                       }
                     `}
                   >
                     <Icon
-                      size={18}
+                      size={16}
                       className={
                         isActive
-                          ? "text-vms-primaria"
-                          : "text-vms-muted group-hover:text-vms-texto-2"
+                          ? "text-vms-primaria shrink-0"
+                          : "text-vms-ghost group-hover:text-vms-texto shrink-0"
                       }
                     />
                     <span className="flex-1">{item.label}</span>
                     {item.badge && (
                       <span
-                        className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${badgeStyles[item.badge.variant]}`}
+                        className={`rounded-[20px] px-[7px] py-[2px] text-[9px] font-bold tracking-[0.3px] ${badgeStyles[item.badge.variant]}`}
                       >
                         {item.badge.text}
                       </span>
@@ -168,22 +234,29 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           ))}
         </nav>
 
-        <div className="border-t border-vms-borda p-4">
-          <div className="rounded-xl glass-card p-3">
-            <div className="mb-2 flex items-center gap-2">
-              <Zap size={14} className="text-vms-primaria" />
-              <span className="text-xs font-semibold text-vms-texto">Plano Starter</span>
+        <div className="px-[22px] py-4 border-t border-vms-borda">
+          <div className="bg-vms-primaria-dim border border-vms-primaria-border rounded-[10px] p-[14px] mb-[10px] plan-chip-flash">
+            <div className="text-[9.5px] tracking-[2.5px] uppercase text-vms-primaria font-semibold mb-2 flex items-center gap-[6px]">
+              <Zap size={10} />
+              Plano {planoInfo.nome}
             </div>
-            <div className="mb-1 h-1.5 w-full overflow-hidden rounded-full bg-vms-dark-3">
+            <div className="h-[2px] bg-vms-primaria-dim rounded-[2px] mb-[6px] overflow-hidden">
               <div
-                className="h-full rounded-full bg-vms-primaria"
-                style={{ width: "65%" }}
+                className="h-full rounded-[2px] bg-vms-primaria transition-all duration-300"
+                style={{ width: `${sitesPct}%`, boxShadow: "0 0 6px #C8F135" }}
               />
             </div>
-            <span className="text-[11px] text-vms-muted">7 de 10 sites usados</span>
+            <span className="text-[11px] text-vms-ghost font-mono">{sitesLabel} sites</span>
           </div>
 
-          <button className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-vms-red-light transition-colors hover:bg-vms-red-bg">
+          <button
+            onClick={async () => {
+              const supabase = createClient();
+              await supabase.auth.signOut();
+              window.location.href = "/login";
+            }}
+            className="flex w-full items-center gap-[8px] py-[9px] px-[22px] text-[13px] font-medium text-red-400/45 hover:text-red-400/85 hover:bg-red-400/[0.04] hover:pl-[26px] transition-all cursor-pointer"
+          >
             <LogOut size={16} />
             <span>Sair</span>
           </button>

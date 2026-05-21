@@ -6,6 +6,8 @@ export interface Usuario {
   plano: "gratuito" | "starter" | "pro" | "agency" | "admin";
   afiliado_id: string | null;
   cargo: "admin" | "criador";
+  asaas_customer_id: string | null;
+  asaas_subscription_id: string | null;
   criado_em: string;
 }
 
@@ -15,6 +17,7 @@ export interface Site {
   nome_site: string;
   nicho: string;
   slug: string | null;
+  dominio_personalizado: string | null;
   dados_json: Record<string, unknown> | null;
   template_id: string | null;
   publicado: boolean;
@@ -32,6 +35,8 @@ export interface Cliente {
   valor_mensal: number | null;
   status: "trial" | "ativo" | "inadimplente" | "cancelado";
   vencimento: string | null;
+  asaas_customer_id: string | null;
+  asaas_subscription_id: string | null;
   criado_em: string;
 }
 
@@ -39,10 +44,12 @@ export interface Proposta {
   id: string;
   criador_id: string;
   site_id: string | null;
+  cliente_id: string | null;
   nome_prospect: string;
   whatsapp: string | null;
   status: "gerado" | "enviado" | "negociando" | "fechado" | "perdido";
   valor_proposto: number | null;
+  notas: string | null;
   criado_em: string;
 }
 
@@ -75,5 +82,69 @@ export interface ProspeccaoResultado {
   total_avaliacoes: number | null;
   tem_site: boolean;
   site_url: string | null;
-  fonte?: "google" | "openstreetmap";
+  redes_sociais: string[] | null;
+  lat?: number | null;
+  lon?: number | null;
+}
+
+export interface Notificacao {
+  id: string;
+  usuario_id: string;
+  tipo: "cliente_novo" | "proposta" | "pagamento" | "site_publicado" | "atualizacao" | "sistema";
+  titulo: string;
+  mensagem: string;
+  lida: boolean;
+  criado_em: string;
+}
+
+export interface Transacao {
+  id: string;
+  criador_id: string;
+  cliente_id: string | null;
+  site_id: string | null;
+  tipo: "receita" | "reembolso" | "comissao";
+  valor: number;
+  status: "pago" | "pendente" | "atrasado";
+  descricao: string | null;
+  vencimento: string | null;
+  pago_em: string | null;
+  criado_em: string;
+  clientes?: { nome: string } | null;
+  sites?: { nome_site: string } | null;
+}
+
+export interface Afiliado {
+  id: string;
+  usuario_id: string;
+  codigo_indicacao: string;
+  comissao_percentual: number;
+  status: "ativo" | "inativo" | "pendente";
+  total_indicados: number;
+  total_comissoes: number;
+  criado_em: string;
+}
+
+export interface Indicacao {
+  id: string;
+  afiliado_id: string;
+  indicado_id: string;
+  comissao: number;
+  status: "pendente" | "pago";
+  criado_em: string;
+  indicados?: { nome: string; email: string; plano: string } | null;
+}
+
+export interface PagamentoAsaas {
+  id: string;
+  criador_id: string;
+  cliente_id: string;
+  asaas_payment_id: string | null;
+  asaas_customer_id: string | null;
+  tipo: "boleto" | "pix" | "cartao";
+  valor: number;
+  status: "pending" | "received" | "overdue" | "cancelled";
+  link_pagamento: string | null;
+  vencimento: string;
+  pago_em: string | null;
+  criado_em: string;
 }

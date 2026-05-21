@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Check,
   Sparkles,
@@ -103,9 +103,31 @@ const initialForm: FormData = {
 };
 
 export default function CriarSitePage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="w-8 h-8 border-2 border-vms-primaria border-t-transparent rounded-full animate-spin" /></div>}>
+      <CriarSiteContent />
+    </Suspense>
+  );
+}
+
+function CriarSiteContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState<FormData>(initialForm);
+  const [form, setForm] = useState<FormData>(() => {
+    const nome = searchParams.get("nome") || "";
+    const endereco = searchParams.get("endereco") || "";
+    const whatsapp = searchParams.get("whatsapp") || "";
+    const segmento = searchParams.get("segmento") || "";
+    return {
+      ...initialForm,
+      nome_empresa: nome,
+      endereco: endereco,
+      whatsapp: whatsapp,
+      nicho: segmento,
+      sem_endereco: !endereco,
+    };
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [gerandoCores, setGerandoCores] = useState(false);
   const [gerandoSite, setGerandoSite] = useState(false);
@@ -280,7 +302,7 @@ export default function CriarSitePage() {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
 
-    const { error } = await supabase.from("sites").insert({
+    const { data: siteData, error } = await supabase.from("sites").insert({
       criador_id: user.id,
       nome_site: form.nome_empresa,
       nicho: form.nicho || "outro",
@@ -300,10 +322,27 @@ export default function CriarSitePage() {
         whatsapp: form.whatsapp,
         html_gerado: htmlGerado,
       },
-    });
+    }).select().single();
 
-    if (!error) {
-      router.push("/sites");
+    if (!error && siteData) {
+      await supabase.from("propostas").insert({
+        criador_id: user.id,
+        site_id: siteData.id,
+        nome_prospect: form.nome_empresa,
+        whatsapp: form.whatsapp || null,
+        status: "gerado",
+        valor_proposto: null,
+      });
+
+      await supabase.from("notificacoes").insert({
+        usuario_id: user.id,
+        tipo: "site_publicado",
+        titulo: "Novo site criado!",
+        mensagem: `O site "${form.nome_empresa}" foi criado com sucesso e já está na aba de propostas.`,
+        lida: false,
+      });
+
+      router.push("/propostas");
     } else {
       setShowOverlay(false);
       setGerandoSite(false);
@@ -408,7 +447,7 @@ export default function CriarSitePage() {
 
         <div
           className={`
-            bg-vms-card/80 backdrop-blur-xl border border-white/5 rounded-2xl p-8
+            bg-vms-card/80 backdrop-blur-xl border border-white/5 rounded-[14px] p-8
             shadow-[0_8px_32px_rgba(0,0,0,0.4)]
             transition-opacity duration-200
             ${transitioning ? "opacity-0" : "opacity-100"}
@@ -434,7 +473,7 @@ export default function CriarSitePage() {
                   placeholder="Ex: Transportadora do Felipe"
                   value={form.nome_empresa}
                   onChange={(e) => updateForm("nome_empresa", e.target.value)}
-                  className={`w-full border bg-white/5 rounded-xl px-4 py-3 text-sm text-vms-texto
+                  className={`w-full border bg-white/5 rounded-[10px] px-4 py-3 text-sm text-vms-texto
                     placeholder:text-vms-dark-5 outline-none transition-colors
                     ${errors.nome_empresa ? "border-vms-erro" : "border-white/5 focus:border-vms-primaria"}`}
                 />
@@ -443,14 +482,14 @@ export default function CriarSitePage() {
                 )}
 
                 {buscandoEmpresa && (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-vms-blue-bg">
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-[8px] bg-vms-blue-bg">
                     <div className="w-3 h-3 border-2 border-vms-blue-light border-t-transparent rounded-full animate-spin" />
                     <span className="text-xs text-vms-blue-light">Buscando empresa no Google...</span>
                   </div>
                 )}
 
                 {empresaEncontrada && !buscandoEmpresa && (
-                  <div className={`rounded-xl p-3 ${
+                  <div className={`rounded-[10px] p-3 ${
                     empresaEncontrada.encontrado
                       ? "border border-vms-primaria/20 bg-vms-primaria/5"
                       : "border border-vms-dark-3 bg-vms-dark-1"
@@ -512,14 +551,14 @@ export default function CriarSitePage() {
                     onChange={(e) => updateForm("descricao", e.target.value)}
                     min-h={120}
                     rows={4}
-                    className={`w-full border bg-white/5 rounded-xl px-4 py-3 text-sm text-vms-texto
+                    className={`w-full border bg-white/5 rounded-[10px] px-4 py-3 text-sm text-vms-texto
                       placeholder:text-vms-dark-5 outline-none transition-colors min-h-[120px] resize-y
                       ${errors.descricao ? "border-vms-erro" : "border-white/5 focus:border-vms-primaria"}`}
                   />
                   <button
                     type="button"
                     className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5
-                      bg-vms-primaria/10 border border-vms-primaria/20 rounded-lg
+                      bg-vms-primaria/10 border border-vms-primaria/20 rounded-[8px]
                       text-vms-primaria text-xs font-medium hover:bg-vms-primaria/20
                       transition-colors cursor-pointer"
                   >
@@ -539,20 +578,28 @@ export default function CriarSitePage() {
                 <label className="text-vms-texto-2 text-xs font-medium">
                   Objetivo do site <span className="text-vms-primaria">*</span>
                 </label>
-                <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {OBJETIVOS.map((obj) => (
                     <label
                       key={obj}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer
+                      className={`flex items-center gap-3 px-4 py-3 rounded-[10px] border cursor-pointer
                         transition-all duration-200
                         ${form.objetivo === obj
                           ? "border-vms-primaria/40 bg-vms-primaria/5"
                           : "border-white/5 bg-white/[0.02] hover:border-white/10"
                         }`}
                     >
+                      <input
+                        type="radio"
+                        name="objetivo"
+                        value={obj}
+                        checked={form.objetivo === obj}
+                        onChange={() => updateForm("objetivo", obj)}
+                        className="sr-only"
+                      />
                       <div
                         className={`w-4 h-4 rounded-full border-2 flex items-center justify-center
-                          transition-colors duration-200
+                          transition-colors duration-200 shrink-0
                           ${form.objetivo === obj
                             ? "border-vms-primaria"
                             : "border-vms-muted/40"
@@ -564,7 +611,7 @@ export default function CriarSitePage() {
                       </div>
                       <span
                         className={`text-sm transition-colors ${
-                          form.objetivo === obj ? "text-vms-texto" : "text-vms-texto-2"
+                          form.objetivo === obj ? "text-vms-texto font-medium" : "text-vms-texto-2"
                         }`}
                       >
                         {obj}
@@ -585,7 +632,7 @@ export default function CriarSitePage() {
                 <select
                   value={form.idioma}
                   onChange={(e) => updateForm("idioma", e.target.value)}
-                  className="w-full border bg-white/5 rounded-xl px-4 py-3 text-sm text-vms-texto
+                  className="w-full border bg-white/5 rounded-[10px] px-4 py-3 text-sm text-vms-texto
                     outline-none transition-colors appearance-none cursor-pointer
                     border-white/5 focus:border-vms-primaria"
                 >
@@ -621,7 +668,7 @@ export default function CriarSitePage() {
                   </p>
                 ) : (
                   <div
-                    className="border-2 border-dashed border-white/10 rounded-xl p-6
+                    className="border-2 border-dashed border-white/10 rounded-[10px] p-6
                       flex flex-col items-center justify-center gap-3 hover:border-vms-primaria/30
                       transition-colors cursor-pointer"
                     onClick={() => document.getElementById("logo-upload")?.click()}
@@ -631,7 +678,7 @@ export default function CriarSitePage() {
                         <img
                           src={logoPreview}
                           alt="Logo preview"
-                          className="w-20 h-20 object-contain rounded-lg"
+                          className="w-20 h-20 object-contain rounded-[8px]"
                         />
                         <span className="text-vms-texto-2 text-xs">Clique para trocar</span>
                       </div>
@@ -667,7 +714,7 @@ export default function CriarSitePage() {
                       key={n.value}
                       type="button"
                       onClick={() => updateForm("nicho", n.value)}
-                      className={`px-3 py-2.5 rounded-xl border text-xs font-medium
+                      className={`px-3 py-2.5 rounded-[10px] border text-xs font-medium
                         transition-all duration-200 cursor-pointer text-center
                         ${form.nicho === n.value
                           ? "border-vms-primaria/40 bg-vms-primaria/10 text-vms-primaria"
@@ -699,7 +746,7 @@ export default function CriarSitePage() {
                   onClick={gerarCoresIA}
                   disabled={gerandoCores}
                   className={`w-full flex items-center justify-center gap-2 px-6 py-4
-                    rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer
+                    rounded-[10px] font-semibold text-sm transition-all duration-300 cursor-pointer
                     ${gerandoCores
                       ? "bg-vms-primaria/20 text-vms-primaria/60"
                       : "bg-vms-primaria text-black hover:brightness-110 hover:shadow-[0_0_24px_rgba(170,255,0,0.2)]"
@@ -729,14 +776,14 @@ export default function CriarSitePage() {
                       type="color"
                       value={form.cor_primaria}
                       onChange={(e) => updateForm("cor_primaria", e.target.value)}
-                      className="w-10 h-10 rounded-lg border border-white/10 cursor-pointer
+                      className="w-10 h-10 rounded-[8px] border border-white/10 cursor-pointer
                         bg-transparent p-0.5"
                     />
                     <input
                       type="text"
                       value={form.cor_primaria}
                       onChange={(e) => updateForm("cor_primaria", e.target.value)}
-                      className="flex-1 border bg-white/5 rounded-lg px-3 py-2 text-sm text-vms-texto
+                      className="flex-1 border bg-white/5 rounded-[8px] px-3 py-2 text-sm text-vms-texto
                         font-mono outline-none transition-colors border-white/5 focus:border-vms-primaria"
                     />
                   </div>
@@ -754,14 +801,14 @@ export default function CriarSitePage() {
                       type="color"
                       value={form.cor_secundaria}
                       onChange={(e) => updateForm("cor_secundaria", e.target.value)}
-                      className="w-10 h-10 rounded-lg border border-white/10 cursor-pointer
+                      className="w-10 h-10 rounded-[8px] border border-white/10 cursor-pointer
                         bg-transparent p-0.5"
                     />
                     <input
                       type="text"
                       value={form.cor_secundaria}
                       onChange={(e) => updateForm("cor_secundaria", e.target.value)}
-                      className="flex-1 border bg-white/5 rounded-lg px-3 py-2 text-sm text-vms-texto
+                      className="flex-1 border bg-white/5 rounded-[8px] px-3 py-2 text-sm text-vms-texto
                         font-mono outline-none transition-colors border-white/5 focus:border-vms-primaria"
                     />
                   </div>
@@ -771,7 +818,7 @@ export default function CriarSitePage() {
                 </div>
               </div>
 
-              <div className="flex rounded-xl overflow-hidden border border-white/5 h-10">
+              <div className="flex rounded-[10px] overflow-hidden border border-white/5 h-10">
                 <div
                   className="flex-1 flex items-center justify-center text-xs font-semibold"
                   style={{ backgroundColor: form.cor_primaria, color: "#000" }}
@@ -794,14 +841,14 @@ export default function CriarSitePage() {
                   <button
                     type="button"
                     onClick={() => updateForm("tema", "claro")}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2
+                    className={`flex flex-col items-center gap-2 p-4 rounded-[10px] border-2
                       transition-all duration-200 cursor-pointer
                       ${form.tema === "claro"
                         ? "border-vms-primaria shadow-[0_0_12px_rgba(170,255,0,0.15)]"
                         : "border-white/5 hover:border-white/10"
                       }`}
                   >
-                    <div className="w-full h-12 bg-white rounded-lg flex items-center justify-center">
+                    <div className="w-full h-12 bg-white rounded-[8px] flex items-center justify-center">
                       <span className="text-black font-bold text-lg">Aa</span>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -817,14 +864,14 @@ export default function CriarSitePage() {
                   <button
                     type="button"
                     onClick={() => updateForm("tema", "escuro")}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2
+                    className={`flex flex-col items-center gap-2 p-4 rounded-[10px] border-2
                       transition-all duration-200 cursor-pointer
                       ${form.tema === "escuro"
                         ? "border-vms-primaria shadow-[0_0_12px_rgba(170,255,0,0.15)]"
                         : "border-white/5 hover:border-white/10"
                       }`}
                   >
-                    <div className="w-full h-12 bg-[#111] rounded-lg flex items-center justify-center">
+                    <div className="w-full h-12 bg-[#111] rounded-[8px] flex items-center justify-center">
                       <span className="text-white font-bold text-lg">Aa</span>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -849,7 +896,7 @@ export default function CriarSitePage() {
                   value={form.endereco}
                   onChange={(e) => updateForm("endereco", e.target.value)}
                   disabled={form.sem_endereco}
-                  className={`w-full border bg-white/5 rounded-xl px-4 py-3 text-sm text-vms-texto
+                  className={`w-full border bg-white/5 rounded-[10px] px-4 py-3 text-sm text-vms-texto
                     placeholder:text-vms-dark-5 outline-none transition-colors
                     border-white/5 focus:border-vms-primaria
                     ${form.sem_endereco ? "opacity-40 cursor-not-allowed" : ""}`}
@@ -884,7 +931,7 @@ export default function CriarSitePage() {
                       placeholder="@seunegocio ou link do perfil"
                       value={form.instagram}
                       onChange={(e) => updateForm("instagram", e.target.value)}
-                      className="w-full border bg-white/5 rounded-xl pl-10 pr-4 py-3 text-sm text-vms-texto
+                      className="w-full border bg-white/5 rounded-[10px] pl-10 pr-4 py-3 text-sm text-vms-texto
                         placeholder:text-vms-dark-5 outline-none transition-colors
                         border-white/5 focus:border-vms-primaria"
                     />
@@ -901,7 +948,7 @@ export default function CriarSitePage() {
                     placeholder="facebook.com/seunegocio"
                     value={form.facebook}
                     onChange={(e) => updateForm("facebook", e.target.value)}
-                    className="w-full border bg-white/5 rounded-xl pl-10 pr-4 py-3 text-sm text-vms-texto
+                    className="w-full border bg-white/5 rounded-[10px] pl-10 pr-4 py-3 text-sm text-vms-texto
                       placeholder:text-vms-dark-5 outline-none transition-colors
                       border-white/5 focus:border-vms-primaria"
                   />
@@ -914,7 +961,7 @@ export default function CriarSitePage() {
                     placeholder="(11) 91234-5678"
                     value={form.whatsapp}
                     onChange={(e) => updateForm("whatsapp", e.target.value)}
-                    className="w-full border bg-white/5 rounded-xl pl-10 pr-4 py-3 text-sm text-vms-texto
+                    className="w-full border bg-white/5 rounded-[10px] pl-10 pr-4 py-3 text-sm text-vms-texto
                       placeholder:text-vms-dark-5 outline-none transition-colors
                       border-white/5 focus:border-vms-primaria"
                   />
@@ -1052,7 +1099,7 @@ export default function CriarSitePage() {
                 onClick={handleCriarSite}
                 disabled={gerandoSite}
                 className="w-full flex items-center justify-center gap-2 px-6 py-4
-                  bg-vms-primaria text-black font-semibold rounded-xl text-base
+                  bg-vms-primaria text-black font-semibold rounded-[10px] text-base
                   hover:brightness-110 hover:shadow-[0_0_32px_rgba(170,255,0,0.25)]
                   transition-all duration-300 cursor-pointer
                   disabled:opacity-60 disabled:cursor-not-allowed"
@@ -1069,7 +1116,7 @@ export default function CriarSitePage() {
             type="button"
             onClick={goBack}
             disabled={step === 1}
-            className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl
+            className="flex items-center gap-1.5 px-5 py-2.5 rounded-[10px]
               bg-vms-card text-vms-texto-2 text-sm font-medium
               hover:bg-vms-dark-3 transition-colors cursor-pointer
               disabled:opacity-30 disabled:cursor-not-allowed"
@@ -1081,7 +1128,7 @@ export default function CriarSitePage() {
             <button
               type="button"
               onClick={goNext}
-              className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl
+              className="flex items-center gap-1.5 px-5 py-2.5 rounded-[10px]
                 bg-vms-primaria text-black text-sm font-semibold
                 hover:brightness-110 transition-all cursor-pointer"
             >
@@ -1141,8 +1188,8 @@ function ReviewCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex gap-4 p-4 rounded-xl border border-white/5 bg-white/[0.02]">
-      <div className="w-8 h-8 rounded-lg bg-vms-primaria/10 flex items-center justify-center
+    <div className="flex gap-4 p-4 rounded-[10px] border border-white/5 bg-white/[0.02]">
+      <div className="w-8 h-8 rounded-[8px] bg-vms-primaria/10 flex items-center justify-center
         text-vms-primaria shrink-0">
         {icon}
       </div>

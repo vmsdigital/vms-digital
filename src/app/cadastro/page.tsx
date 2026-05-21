@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Mail, Lock, Eye, EyeOff, User, Phone, CheckCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -108,9 +109,9 @@ export default function CadastroPage() {
         <div className="absolute inset-0 bg-grid" />
         <div className="absolute right-1/4 top-1/3 h-[500px] w-[500px] rounded-full bg-vms-primaria/5 blur-[120px]" />
 
-        <div className="animate-scale-in relative w-full max-w-md rounded-2xl glass p-8 glow-primaria-sm">
+        <div className="animate-scale-in relative w-full max-w-md rounded-[14px] glass p-8 glow-primaria-sm">
           <div className="mb-6 flex flex-col items-center text-center">
-            <div className="animate-float mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-vms-primaria-20">
+            <div className="animate-float mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[14px] bg-vms-primaria-20">
               <CheckCircle size={32} className="text-vms-primaria" />
             </div>
             <h1 className="text-2xl font-bold text-vms-texto">Verifique seu e-mail</h1>
@@ -121,7 +122,7 @@ export default function CadastroPage() {
           </div>
 
           {error && (
-            <div className="animate-fade-in mb-4 rounded-xl border border-vms-erro/30 bg-vms-red-bg px-4 py-3 text-sm text-vms-erro">
+            <div className="animate-fade-in mb-4 rounded-[10px] border border-vms-erro/30 bg-vms-red-bg px-4 py-3 text-sm text-vms-erro">
               {error}
             </div>
           )}
@@ -129,7 +130,7 @@ export default function CadastroPage() {
           <div className="space-y-3">
             <a
               href={`mailto:${email}`}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-vms-primaria py-2.5 text-sm font-semibold text-black transition-all hover:brightness-110"
+              className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-vms-primaria py-2.5 text-sm font-semibold text-black transition-all hover:brightness-110"
             >
               <Mail size={16} />
               Abrir e-mail
@@ -138,7 +139,7 @@ export default function CadastroPage() {
             <button
               onClick={handleAlreadyConfirmed}
               disabled={confirmingLoading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/5 bg-white/5 py-2.5 text-sm text-vms-texto-2 transition-all hover:bg-white/[0.08] hover:border-white/10 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-white/5 bg-white/5 py-2.5 text-sm text-vms-texto-2 transition-all hover:bg-white/[0.08] hover:border-white/10 disabled:opacity-50"
             >
               {confirmingLoading ? "Verificando..." : "Já confirmei"}
             </button>
@@ -156,16 +157,24 @@ export default function CadastroPage() {
 
   async function handleGoogleSignup() {
     setError("");
-    const supabase = createClient();
-    const { error: authError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    try {
+      const supabase = createClient();
+      const { error: authError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
 
-    if (authError) {
-      setError(authError.message);
+      if (authError) {
+        if (authError.message.includes("provider is not enabled") || authError.message.includes("Unsupported provider")) {
+          setError("Login com Google não está disponível no momento. Use e-mail e senha.");
+        } else {
+          setError(authError.message);
+        }
+      }
+    } catch (err) {
+      setError("Erro ao conectar com Google. Tente novamente ou use e-mail e senha.");
     }
   }
 
@@ -175,15 +184,15 @@ export default function CadastroPage() {
       <div className="absolute right-1/4 top-1/3 h-[500px] w-[500px] rounded-full bg-vms-primaria/5 blur-[120px]" />
       <div className="absolute bottom-1/3 left-1/4 h-[400px] w-[400px] rounded-full bg-vms-primaria/3 blur-[100px]" />
 
-      <div className="animate-scale-in relative w-full max-w-md rounded-2xl glass p-8 glow-primaria-sm">
+      <div className="animate-scale-in relative w-full max-w-md rounded-[14px] glass p-8 glow-primaria-sm">
         <div className="mb-8 text-center">
-          <div className="animate-float mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-vms-primaria/10">
-            <span className="text-2xl font-bold text-vms-primaria">V</span>
-          </div>
-          <h1 className="text-3xl font-bold">
-            <span className="text-vms-primaria text-glow">VMS</span>
-          </h1>
-          <p className="mt-1 text-sm tracking-[0.3em] text-vms-muted">DIGITAL</p>
+          <Image
+            src="/logo-vms.svg"
+            alt="Startzy"
+            width={140}
+            height={40}
+            className="mx-auto mb-3 animate-float"
+          />
         </div>
 
         <h2 className="mb-6 text-center text-xl font-semibold text-vms-texto">
@@ -191,7 +200,7 @@ export default function CadastroPage() {
         </h2>
 
         {error && (
-          <div className="animate-fade-in mb-4 rounded-xl border border-vms-erro/30 bg-vms-red-bg px-4 py-3 text-sm text-vms-erro">
+          <div className="animate-fade-in mb-4 rounded-[10px] border border-vms-erro/30 bg-vms-red-bg px-4 py-3 text-sm text-vms-erro">
             {error}
           </div>
         )}
@@ -207,7 +216,7 @@ export default function CadastroPage() {
                 onChange={(e) => setNome(e.target.value)}
                 placeholder="Seu nome completo"
                 required
-                className="w-full rounded-xl border border-white/5 bg-white/5 py-2.5 pl-10 pr-4 text-sm text-vms-texto placeholder:text-vms-dark-5 focus:border-vms-primaria/50 focus:bg-white/[0.07] focus:outline-none focus:ring-1 focus:ring-vms-primaria/20 transition-all"
+                className="w-full rounded-[10px] border border-white/5 bg-white/5 py-2.5 pl-10 pr-4 text-sm text-vms-texto placeholder:text-vms-dark-5 focus:border-vms-primaria/50 focus:bg-white/[0.07] focus:outline-none focus:ring-1 focus:ring-vms-primaria/20 transition-all"
               />
             </div>
           </div>
@@ -222,7 +231,7 @@ export default function CadastroPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
                 required
-                className="w-full rounded-xl border border-white/5 bg-white/5 py-2.5 pl-10 pr-4 text-sm text-vms-texto placeholder:text-vms-dark-5 focus:border-vms-primaria/50 focus:bg-white/[0.07] focus:outline-none focus:ring-1 focus:ring-vms-primaria/20 transition-all"
+                className="w-full rounded-[10px] border border-white/5 bg-white/5 py-2.5 pl-10 pr-4 text-sm text-vms-texto placeholder:text-vms-dark-5 focus:border-vms-primaria/50 focus:bg-white/[0.07] focus:outline-none focus:ring-1 focus:ring-vms-primaria/20 transition-all"
               />
             </div>
           </div>
@@ -236,7 +245,7 @@ export default function CadastroPage() {
                 value={whatsapp}
                 onChange={(e) => setWhatsapp(formatWhatsApp(e.target.value))}
                 placeholder="(00) 00000-0000"
-                className="w-full rounded-xl border border-white/5 bg-white/5 py-2.5 pl-10 pr-4 text-sm text-vms-texto placeholder:text-vms-dark-5 focus:border-vms-primaria/50 focus:bg-white/[0.07] focus:outline-none focus:ring-1 focus:ring-vms-primaria/20 transition-all"
+                className="w-full rounded-[10px] border border-white/5 bg-white/5 py-2.5 pl-10 pr-4 text-sm text-vms-texto placeholder:text-vms-dark-5 focus:border-vms-primaria/50 focus:bg-white/[0.07] focus:outline-none focus:ring-1 focus:ring-vms-primaria/20 transition-all"
               />
             </div>
           </div>
@@ -251,12 +260,16 @@ export default function CadastroPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Mínimo 6 caracteres"
                 required
-                className="w-full rounded-xl border border-white/5 bg-white/5 py-2.5 pl-10 pr-10 text-sm text-vms-texto placeholder:text-vms-dark-5 focus:border-vms-primaria/50 focus:bg-white/[0.07] focus:outline-none focus:ring-1 focus:ring-vms-primaria/20 transition-all"
+                className="w-full rounded-[10px] border border-white/5 bg-white/5 py-2.5 pl-10 pr-10 text-sm text-vms-texto placeholder:text-vms-dark-5 focus:border-vms-primaria/50 focus:bg-white/[0.07] focus:outline-none focus:ring-1 focus:ring-vms-primaria/20 transition-all"
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-vms-muted hover:text-vms-texto-2 transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowPassword((prev) => !prev);
+                }}
+                className="absolute right-3 top-1/2 z-10 -translate-y-1/2 cursor-pointer text-vms-muted hover:text-vms-texto-2 transition-colors"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -273,12 +286,16 @@ export default function CadastroPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Repita a senha"
                 required
-                className="w-full rounded-xl border border-white/5 bg-white/5 py-2.5 pl-10 pr-10 text-sm text-vms-texto placeholder:text-vms-dark-5 focus:border-vms-primaria/50 focus:bg-white/[0.07] focus:outline-none focus:ring-1 focus:ring-vms-primaria/20 transition-all"
+                className="w-full rounded-[10px] border border-white/5 bg-white/5 py-2.5 pl-10 pr-10 text-sm text-vms-texto placeholder:text-vms-dark-5 focus:border-vms-primaria/50 focus:bg-white/[0.07] focus:outline-none focus:ring-1 focus:ring-vms-primaria/20 transition-all"
               />
               <button
                 type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-vms-muted hover:text-vms-texto-2 transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowConfirmPassword((prev) => !prev);
+                }}
+                className="absolute right-3 top-1/2 z-10 -translate-y-1/2 cursor-pointer text-vms-muted hover:text-vms-texto-2 transition-colors"
               >
                 {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -288,7 +305,7 @@ export default function CadastroPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-vms-primaria py-2.5 text-sm font-semibold text-black transition-all hover:shadow-[0_0_20px_rgba(170,255,0,0.3)] hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
+            className="w-full rounded-[10px] bg-vms-primaria py-2.5 text-sm font-semibold text-black transition-all hover:shadow-[0_0_20px_rgba(170,255,0,0.3)] hover:brightness-110 disabled:opacity-50 disabled:hover:shadow-none"
           >
             {loading ? "Criando conta..." : "Criar conta"}
           </button>
@@ -302,7 +319,7 @@ export default function CadastroPage() {
 
         <button
           onClick={handleGoogleSignup}
-          className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/5 bg-white/5 py-2.5 text-sm text-vms-texto-2 transition-all hover:bg-white/[0.08] hover:border-white/10"
+          className="flex w-full items-center justify-center gap-3 rounded-[10px] border border-white/5 bg-white/5 py-2.5 text-sm text-vms-texto-2 transition-all hover:bg-white/[0.08] hover:border-white/10"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />

@@ -32,33 +32,30 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const protectedPaths = ["/dashboard", "/sites", "/prospeccao", "/propostas", "/clientes", "/afiliados", "/templates", "/financeiro", "/configuracoes"];
-  const isProtected = protectedPaths.some((p) => request.nextUrl.pathname.startsWith(p));
+  const pathname = request.nextUrl.pathname;
 
-  const clienteProtectedPaths = ["/cliente/dashboard"];
-  const isClienteProtected = clienteProtectedPaths.some((p) => request.nextUrl.pathname.startsWith(p));
+  const publicPaths = ["/", "/login", "/cadastro", "/recuperar-senha", "/cliente/login"];
+  const isPublic = publicPaths.some((p) => pathname === p) || pathname.startsWith("/proposta/") || pathname.startsWith("/auth/");
 
-  if (!user && isProtected) {
+  const dashboardPaths = [
+    "/dashboard", "/sites", "/prospeccao", "/propostas",
+    "/clientes", "/afiliados", "/templates", "/financeiro",
+    "/configuracoes", "/relatorios", "/suporte", "/admin",
+  ];
+  const isProtected = dashboardPaths.some((p) => pathname.startsWith(p));
+
+  const clienteProtectedPaths = ["/cliente/dashboard", "/cliente/dominio", "/cliente/midias", "/cliente/pagamentos", "/cliente/perfil", "/cliente/site"];
+  const isClienteProtected = clienteProtectedPaths.some((p) => pathname.startsWith(p));
+
+  if (!user && (isProtected || isClienteProtected)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = isClienteProtected ? "/cliente/login" : "/login";
     return NextResponse.redirect(url);
   }
 
-  if (!user && isClienteProtected) {
+  if (user && isPublic && pathname !== "/") {
     const url = request.nextUrl.clone();
-    url.pathname = "/cliente/login";
-    return NextResponse.redirect(url);
-  }
-
-  if (user && (request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/cadastro")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
-  }
-
-  if (user && request.nextUrl.pathname === "/cliente/login") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/cliente/dashboard";
+    url.pathname = pathname.startsWith("/cliente") ? "/cliente/dashboard" : "/dashboard";
     return NextResponse.redirect(url);
   }
 
