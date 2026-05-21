@@ -26,6 +26,12 @@ export default function LandingPage() {
   const cursorRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
   const [activeSection, setActiveSection] = useState("");
+  const [showIntro, setShowIntro] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowIntro(false), 3200);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const cursor = cursorRef.current;
@@ -122,7 +128,17 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="landing-page">
+    <>
+      {showIntro && (
+        <div className="intro-overlay">
+          <img
+            src="/animacao-entrada.gif"
+            alt="Startzy"
+            className="intro-gif"
+          />
+        </div>
+      )}
+      <div className={`landing-page${showIntro ? " landing-hidden" : ""}`}>
       <Script
         src="https://unpkg.com/@phosphor-icons/web@2.1.1"
         strategy="beforeInteractive"
@@ -760,5 +776,6 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
+    </>
   );
 }
