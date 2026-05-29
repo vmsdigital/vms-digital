@@ -968,11 +968,11 @@ function SalesNotification() {
   useEffect(() => {
     if (!started || dismissed) return;
 
-    const showTimer = setTimeout(() => setShow(true), 600);
-    const hideTimer = setTimeout(() => setShow(false), 3600);
+    const showTimer = setTimeout(() => setShow(true), 1200);
+    const hideTimer = setTimeout(() => setShow(false), 7200);
     const nextTimer = setTimeout(() => {
       setIndex((prev) => (prev + 1) % notifications.length);
-    }, 4300);
+    }, 12000);
 
     return () => {
       clearTimeout(showTimer);

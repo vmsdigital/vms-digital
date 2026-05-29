@@ -48,7 +48,7 @@ const faqItems = [
 export default function AjudaPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [openFaq, setOpenFaq] = useState<number | null>(null)
-  const [chatOpen, setChatOpen] = useState(false)
+  const [chatOpen, setChatOpen] = useState(true)
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", content: "Olá! 👋 Eu sou o assistente IA da Startzy. Como posso ajudar você hoje?" }
   ])
@@ -115,7 +115,7 @@ export default function AjudaPage() {
   return (
     <div className="min-h-screen bg-vms-fundo text-vms-texto">
       <header className="border-b border-vms-borda bg-vms-fundo/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-6">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link
             href="/"
             className="flex items-center gap-2 text-vms-texto-2 hover:text-lime-400 transition-colors"
@@ -126,11 +126,12 @@ export default function AjudaPage() {
           <Image
             src="/logo-startzy.svg"
             alt="Startzy"
-            width={200}
-            height={56}
+            width={100}
+            height={28}
             className="object-contain"
             priority
           />
+          <div className="w-20" />
         </div>
       </header>
 
