@@ -187,7 +187,7 @@ export default function CadastroPage() {
       <div className="animate-scale-in relative w-full max-w-md rounded-[14px] glass p-8 glow-primaria-sm">
         <div className="mb-8 text-center">
           <Image
-            src="/logo-vms.svg"
+            src="/logo-startzy.svg"
             alt="Startzy"
             width={140}
             height={40}

@@ -226,7 +226,7 @@ export default function AfiliadosPage() {
               </div>
               <div>
                 <h2 className="text-vms-texto text-base font-medium">Programa de Revendedores</h2>
-                <p className="text-vms-muted text-xs">Revenda sites da VMS Digital e ganhe comissões</p>
+                <p className="text-vms-muted text-xs">Revenda sites da Startzy e ganhe comissões</p>
               </div>
             </div>
 

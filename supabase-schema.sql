@@ -1,5 +1,5 @@
 -- ============================================
--- VMS Digital - SQL Completo para Supabase
+-- Startzy - SQL Completo para Supabase
 -- ============================================
 
 -- Tabela: usuarios
@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS public.sites (
   dados_json JSONB DEFAULT '{}',
   template_id UUID,
   publicado BOOLEAN NOT NULL DEFAULT false,
+  favorito BOOLEAN NOT NULL DEFAULT false,
   criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -98,13 +99,24 @@ CREATE TABLE IF NOT EXISTS public.transacoes (
   criador_id UUID NOT NULL REFERENCES public.usuarios(id) ON DELETE CASCADE,
   cliente_id UUID REFERENCES public.clientes(id) ON DELETE SET NULL,
   site_id UUID REFERENCES public.sites(id) ON DELETE SET NULL,
-  tipo TEXT NOT NULL DEFAULT 'receita' CHECK (tipo IN ('receita', 'reembolso', 'comissao')),
+  tipo TEXT NOT NULL DEFAULT 'receita' CHECK (tipo IN ('receita', 'despesa', 'custo_ia', 'reembolso', 'comissao')),
   valor NUMERIC(10,2) NOT NULL,
   status TEXT NOT NULL DEFAULT 'pendente' CHECK (status IN ('pago', 'pendente', 'atrasado')),
   descricao TEXT,
   vencimento DATE,
   pago_em TIMESTAMPTZ,
   criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Tabela: carteira
+CREATE TABLE IF NOT EXISTS public.carteira (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  criador_id UUID NOT NULL REFERENCES public.usuarios(id) ON DELETE CASCADE,
+  saldo NUMERIC(10,2) NOT NULL DEFAULT 0,
+  total_entradas NUMERIC(10,2) NOT NULL DEFAULT 0,
+  total_saidas NUMERIC(10,2) NOT NULL DEFAULT 0,
+  custo_ia_mes NUMERIC(10,2) NOT NULL DEFAULT 0,
+  atualizado_em TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Tabela: afiliados
@@ -145,6 +157,34 @@ CREATE TABLE IF NOT EXISTS public.pagamento_asaas (
   criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Tabela: agente_tarefas
+CREATE TABLE IF NOT EXISTS public.agente_tarefas (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  criador_id UUID NOT NULL REFERENCES public.usuarios(id) ON DELETE CASCADE,
+  segmento TEXT NOT NULL,
+  cidade TEXT NOT NULL,
+  raio_km INTEGER NOT NULL DEFAULT 25,
+  quantidade INTEGER NOT NULL DEFAULT 10,
+  status TEXT NOT NULL DEFAULT 'pendente' CHECK (status IN ('pendente', 'agendado', 'prospectando', 'gerando', 'concluido', 'erro', 'parcial', 'cancelado')),
+  filtro TEXT NOT NULL DEFAULT 'sem_site' CHECK (filtro IN ('sem_site', 'todos', 'com_site')),
+  tema_padrao TEXT NOT NULL DEFAULT 'escuro' CHECK (tema_padrao IN ('claro', 'escuro')),
+  cor_primaria TEXT NOT NULL DEFAULT '#667eea',
+  cor_secundaria TEXT NOT NULL DEFAULT '#764ba2',
+  horario_limite TIME NOT NULL DEFAULT '03:00',
+  avaliacao_minima NUMERIC(2,1) NOT NULL DEFAULT 0,
+  agendado_para TIMESTAMPTZ,
+  resultados JSONB DEFAULT '[]',
+  sites_criados JSONB DEFAULT '[]',
+  sites_erro JSONB DEFAULT '[]',
+  total_prospectados INTEGER NOT NULL DEFAULT 0,
+  total_sites_criados INTEGER NOT NULL DEFAULT 0,
+  total_erros INTEGER NOT NULL DEFAULT 0,
+  log TEXT[],
+  iniciado_em TIMESTAMPTZ,
+  concluido_em TIMESTAMPTZ,
+  criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- ============================================
 -- Índices
 -- ============================================
@@ -160,6 +200,11 @@ CREATE INDEX IF NOT EXISTS idx_notificacoes_usuario ON public.notificacoes(usuar
 CREATE INDEX IF NOT EXISTS idx_notificacoes_lida ON public.notificacoes(lida);
 CREATE INDEX IF NOT EXISTS idx_transacoes_criador ON public.transacoes(criador_id);
 CREATE INDEX IF NOT EXISTS idx_transacoes_cliente ON public.transacoes(cliente_id);
+CREATE INDEX IF NOT EXISTS idx_agente_tarefas_criador ON public.agente_tarefas(criador_id);
+CREATE INDEX IF NOT EXISTS idx_agente_tarefas_status ON public.agente_tarefas(status);
+CREATE INDEX IF NOT EXISTS idx_carteira_criador ON public.carteira(criador_id);
+CREATE INDEX IF NOT EXISTS idx_transacoes_criador_tipo ON public.transacoes(criador_id, tipo);
+
 CREATE INDEX IF NOT EXISTS idx_pagamento_asaas_cliente ON public.pagamento_asaas(cliente_id);
 CREATE INDEX IF NOT EXISTS idx_pagamento_asaas_payment ON public.pagamento_asaas(asaas_payment_id);
 CREATE INDEX IF NOT EXISTS idx_afiliados_codigo ON public.afiliados(codigo_indicacao);
@@ -179,6 +224,8 @@ ALTER TABLE public.transacoes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.afiliados ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.indicacoes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pagamento_asaas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.agente_tarefas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.carteira ENABLE ROW LEVEL SECURITY;
 
 -- RLS: usuarios
 CREATE POLICY "Usuarios podem ver proprio perfil" ON public.usuarios
@@ -299,6 +346,29 @@ CREATE POLICY "Afiliados veem proprias indicacoes" ON public.indicacoes
     afiliado_id IN (SELECT id FROM public.afiliados WHERE usuario_id = auth.uid())
   );
 
+-- RLS: carteira
+CREATE POLICY "Criadores veem propria carteira" ON public.carteira
+  FOR SELECT USING (criador_id = auth.uid());
+
+CREATE POLICY "Criadores criam propria carteira" ON public.carteira
+  FOR INSERT WITH CHECK (criador_id = auth.uid());
+
+CREATE POLICY "Criadores atualizam propria carteira" ON public.carteira
+  FOR UPDATE USING (criador_id = auth.uid());
+
+-- RLS: agente_tarefas
+CREATE POLICY "Criadores veem proprias tarefas agente" ON public.agente_tarefas
+  FOR SELECT USING (criador_id = auth.uid());
+
+CREATE POLICY "Criadores criam tarefas agente" ON public.agente_tarefas
+  FOR INSERT WITH CHECK (criador_id = auth.uid());
+
+CREATE POLICY "Criadores atualizam proprias tarefas agente" ON public.agente_tarefas
+  FOR UPDATE USING (criador_id = auth.uid());
+
+CREATE POLICY "Criadores deletam proprias tarefas agente" ON public.agente_tarefas
+  FOR DELETE USING (criador_id = auth.uid());
+
 -- RLS: pagamento_asaas
 CREATE POLICY "Criadores veem pagamentos de seus clientes" ON public.pagamento_asaas
   FOR SELECT USING (criador_id = auth.uid());
@@ -376,3 +446,8 @@ DROP TRIGGER IF EXISTS on_payment_status_change ON public.pagamento_asaas;
 CREATE TRIGGER on_payment_status_change
   AFTER UPDATE ON public.pagamento_asaas
   FOR EACH ROW EXECUTE FUNCTION public.handle_payment_status_change();
+
+-- ============================================
+-- Migrations
+-- ============================================
+ALTER TABLE sites ADD COLUMN IF NOT EXISTS favorito boolean DEFAULT false;

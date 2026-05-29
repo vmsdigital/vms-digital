@@ -28,9 +28,9 @@ export async function POST(request: NextRequest) {
         const cnameRecord = dnsData.Answer.find(
           (a: { data: string }) =>
             a.data &&
-            (a.data.includes("vmsdigital") ||
+            (a.data.includes("startzy") ||
               a.data.includes("vercel") ||
-              a.data.includes("cname.vmsdigital.com.br"))
+              a.data.includes("cname.startzy.com.br"))
         );
 
         if (cnameRecord) {
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         verified: false,
         error:
-          "Domínio ainda não está apontando para nossos servidores. Verifique se o CNAME aponta para cname.vmsdigital.com.br ou o registro A aponta para 76.76.21.21",
+          "Domínio ainda não está apontando para nossos servidores. Verifique se o CNAME aponta para cname.startzy.com.br ou o registro A aponta para 76.76.21.21",
       });
     } catch {
       return NextResponse.json({

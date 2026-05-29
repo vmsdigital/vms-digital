@@ -22,14 +22,52 @@ interface SiteFormData {
   whatsapp: string;
 }
 
-function buildPrompt(data: SiteFormData): string {
+const SYSTEM_PROMPT = `Web designer sênior especializado em landing pages de alta conversão. Crie sites VISUALMENTE IMPACTANTES e modernos.
+
+CÓDIGO: HTML completo autônomo. Tailwind CDN (<script src="https://cdn.tailwindcss.com"></script>). 2 Google Fonts (Sora/Space Grotesk/Outfit para títulos, Inter/DM Sans para corpo). Mobile-first. Fade-in scroll com IntersectionObserver. SEM imagens externas — SVGs inline sofisticados ou divs com gradientes. Meta tags SEO. Rodapé: "Criado por Startzy".
+
+DESIGN AVANÇADO:
+- Semântica HTML (header/nav/main/section/footer)
+- py-16 md:py-24 entre seções
+- Títulos text-4xl/5xl/6xl font-black com gradientes de texto (bg-gradient-to-r bg-clip-text text-transparent)
+- Container max-w-6xl mx-auto px-4
+- Cards rounded-2xl com hover scale-[1.02] shadow-lg e border sutil
+- CTAs bg-primaria text-white rounded-xl py-4 px-8 font-bold text-lg com hover:brightness-110
+- SEM emojis — use SVGs inline sofisticados como ícones
+- Gradientes sutis em backgrounds (radial-gradient, linear-gradient)
+- Glassmorphism em cards escuros (backdrop-blur-xl bg-white/5 border border-white/10)
+- Grid/dot patterns sutis como background decorativo
+- Barra gradiente topo (h-1 bg-gradient-to-r from-primaria to-secundaria)
+- Animações CSS: fade-up no scroll, pulse em CTAs, float em SVGs decorativos
+- Decorativos: blobs com blur, linhas diagonais, formas geométricas abstratas
+- Contraste forte entre seções (alternar fundos com bg-primaria/5 e bg-transparent)
+- Números com contador animado (counter-up via JS)
+- Testeimonials com avatar gradient e aspas decorativas
+
+8 SEÇÕES OBRIGATÓRIAS:
+1) Nav fixed backdrop-blur-xl + logo + links + CTA
+2) Hero text-5xl/7xl font-black + subtítulo + 2 CTAs + SVG abstrato decorativo (geometric shapes, waves, circles)
+3) Pain points (3 problemas com ícones SVG) → Solução com 3 diferenciais
+4) Serviços grid 3 cards com SVGs inline sofisticados + hover effects
+5) Números de impacto text-5xl com contador animado (clientes, projetos, anos)
+6) 3 depoimentos com avatar gradient + estrelas + aspas decorativas
+7) FAQ 5-6 accordion details/summary com animação
+8) CTA final gradiente impactante + footer completo + WhatsApp flutuante
+
+GOOGLE MAPS: Se houver endereço, inclua uma seção "Localização" ANTES do CTA final com iframe do Google Maps embed: <iframe src="https://maps.google.com/maps?q=ENDEREÇO_URL_ENCODED&t=&z=15&ie=UTF8&iwloc=&output=embed" width="100%" height="300" style="border:0;border-radius:16px" allowfullscreen loading="lazy"></iframe>
+
+COPY: ESPECÍFICA do nicho, não genérica. Linguagem natural, persuasiva e emocional. Headlines que geram curiosidade. CTAs com urgência. Detalhes visuais únicos por nicho.
+
+Retorne APENAS HTML completo, sem markdown.`;
+
+function buildUserMessage(data: SiteFormData): string {
   const temaBg = data.tema === "escuro" ? "#0a0a0a" : "#ffffff";
   const temaText = data.tema === "escuro" ? "#f5f5f5" : "#1a1a1a";
   const temaCard = data.tema === "escuro" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)";
   const temaBorder = data.tema === "escuro" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
   const idiomaNome = data.idioma === "pt-BR" ? "português brasileiro" : data.idioma;
 
-  return `Você é um web designer sênior e desenvolvedor front-end especializado em criar landing pages de alta conversão. Crie um site profissional e moderno para a empresa "${data.nome_empresa}".
+  return `Crie um site PROFISSIONAL e MODERNO para a empresa "${data.nome_empresa}".
 
 DADOS DA EMPRESA:
 - Nome: ${data.nome_empresa}
@@ -51,89 +89,17 @@ CORES E TEMA:
 - Card: ${temaCard}
 - Borda: ${temaBorder}
 
-REGRAS DE CÓDIGO:
-1. HTML completo e autônomo
-2. Tailwind CSS via CDN: <script src="https://cdn.tailwindcss.com"></script>
-3. Configure cores: <script>tailwind.config={theme:{extend:{colors:{primaria:'${data.cor_primaria}',secundaria:'${data.cor_secundaria}'}}}}</script>
-4. Google Fonts: Inter (400,500,600,700,800)
-5. Responsivo mobile-first
-6. Animações suaves: fade-in ao scroll com IntersectionObserver
-7. NÃO use imagens externas. Use SVGs inline ou divs com gradientes como placeholders visuais.
-8. Texto em ${idiomaNome}
-9. Meta tags SEO completas
-10. Rodapé: "Criado por VMS Digital" (discreto)
-
-REGRAS DE DESIGN — CRÍTICO:
-- Use SEMÂNTICA HTML: <header>, <nav>, <main>, <section>, <article>, <footer>
-- NÃO crie divs genéricas sem significado. Cada elemento deve ter propósito semântico.
-- Espaçamento generoso: py-16 md:py-24 entre seções, gap-8 entre elementos
-- Tipografia com hierarquia clara: títulos bold/large, corpo regular, captions small
-- Use max-w-6xl mx-auto px-4 como container padrão
-- Cards com rounded-2xl, sombras suaves, hover com scale-[1.02] e shadow-lg
-- CTAs com bg-primaria text-white (ou text-black se primária for clara), rounded-xl, py-3 px-6
-- NÃO use emojis nos títulos ou CTAs — texto limpo e profissional
-- Gradientes sutis para elementos visuais, nunca chamativos demais
-- Ícones SVG inline simples (setas, checkmarks, etc) — NÃO use bibliotecas externas de ícones
-
-ESTRUTURA DO SITE (7 seções):
-
-1. NAVEGAÇÃO
-   - Nome da empresa à esquerda (font-bold text-xl)
-   - Links centrais: Sobre · Serviços · Depoimentos · Contato
-   - Botão CTA à direita
-   - Fixed no topo com backdrop-blur e bg semi-transparente
-
-2. HERO
-   - Headline grande e direta (text-4xl md:text-6xl font-extrabold)
-   - Subheadline curta (2-3 linhas, text-lg, opacity-70)
-   - Dois botões: CTA primário + secundário outline
-   - Micro-copy abaixo dos botões (text-xs opacity-50)
-   - Layout: texto à esquerda, elemento visual à direita (gradiente abstrato ou forma geométrica SVG)
-
-3. SERVIÇOS
-   - Título da seção + subtítulo
-   - Grid de 3 cards (md:grid-cols-3)
-   - Cada card: ícone SVG + título + descrição de 2 linhas
-   - Cards com bg do tema, border, rounded-2xl, p-6
-
-4. SOBRE / DIFERENCIAIS
-   - Layout 2 colunas (imagem/gradiente + texto)
-   - 3-4 diferenciais com ícone + texto
-   - Números de impacto (X+ clientes, Y anos, etc)
-
-5. DEPOIMENTOS
-   - 3 cards de depoimentos
-   - Cada um: aspas + texto + nome + empresa
-   - Visual limpo, sem fotos placeholder
-
-6. FAQ
-   - 5-6 perguntas relevantes
-   - Accordion com <details>/<summary> (funciona sem JS)
-   - Estilizado com border, rounded-xl
-
-7. CTA FINAL + FOOTER
-   - Seção com fundo gradiente sutil
-   - Headline de ação + botão grande
-   - Footer com nome, links, copyright
-   - "Criado por VMS Digital"
-   - Botão WhatsApp flutuante (fixed bottom-6 right-6)
+Configure Tailwind: <script>tailwind.config={theme:{extend:{colors:{primaria:'${data.cor_primaria}',secundaria:'${data.cor_secundaria}'}}}}</script>
 
 ${data.whatsapp ? `WHATSAPP: Use https://wa.me/55${data.whatsapp.replace(/\D/g, "")} em todos os CTAs de WhatsApp` : ""}
 
-IMPORTANTE:
-- O site deve parecer REAL, como se fosse feito por uma agência profissional
-- NÃO pareça um template genérico ou artificial
-- Copy deve ser específica para o nicho "${data.nicho}", não genérica
-- Use linguagem natural e persuasiva, sem exageros
-- Cada seção deve ter personalidade própria, não parece cópia uma da outra
-
-Retorne APENAS o código HTML completo, sem markdown, sem explicação.`;
+A copy e os pain points devem ser ESPECÍFICOS para o nicho "${data.nicho}".`;
 }
 
 async function generateWithGemini(data: SiteFormData): Promise<string> {
   if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY não configurada");
 
-  const prompt = buildPrompt(data);
+  const prompt = `${SYSTEM_PROMPT}\n\n${buildUserMessage(data)}`;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
   const res = await fetch(url, {
@@ -160,7 +126,7 @@ async function generateWithGemini(data: SiteFormData): Promise<string> {
 async function generateWithGroq(data: SiteFormData): Promise<string> {
   if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY não configurada");
 
-  const prompt = buildPrompt(data);
+  const prompt = buildUserMessage(data);
 
   const res = await fetch(GROQ_URL, {
     method: "POST",
@@ -190,7 +156,7 @@ async function generateWithGroq(data: SiteFormData): Promise<string> {
 async function generateWithAnthropic(data: SiteFormData): Promise<string> {
   if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY não configurada");
 
-  const prompt = buildPrompt(data);
+  const userMessage = buildUserMessage(data);
 
   const res = await fetch(ANTHROPIC_URL, {
     method: "POST",
@@ -198,12 +164,20 @@ async function generateWithAnthropic(data: SiteFormData): Promise<string> {
       "Content-Type": "application/json",
       "x-api-key": ANTHROPIC_API_KEY,
       "anthropic-version": "2023-06-01",
+      "anthropic-beta": "prompt-caching-2024-07-31",
       "anthropic-dangerous-direct-browser-access": "true",
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
       max_tokens: 8192,
-      messages: [{ role: "user", content: prompt }],
+      system: [
+        {
+          type: "text",
+          text: SYSTEM_PROMPT,
+          cache_control: { type: "ephemeral" },
+        },
+      ],
+      messages: [{ role: "user", content: userMessage }],
     }),
   });
 
@@ -408,10 +382,9 @@ ${data.endereco ? `
 <div class="max-w-6xl mx-auto px-4">
 <h2 class="text-3xl font-bold text-center mb-12 fade-up">Localização</h2>
 <div class="rounded-2xl overflow-hidden fade-up delay-1" style="border:1px solid ${temaBorder}">
-<div class="h-64 flex items-center justify-center" style="background:${temaBg}">
-<p style="opacity:0.5">📍 ${data.endereco}</p>
+<iframe src="https://maps.google.com/maps?q=${encodeURIComponent(data.endereco)}&t=&z=15&ie=UTF8&iwloc=&output=embed" width="100%" height="300" style="border:0;border-radius:16px" allowfullscreen loading="lazy"></iframe>
 </div>
-</div>
+<p class="text-center mt-4 text-sm fade-up delay-2" style="opacity:0.6">📍 ${data.endereco}</p>
 </div>
 </section>` : ""}
 
@@ -451,7 +424,7 @@ Falar pelo WhatsApp
 <footer class="py-8 border-t" style="border-color:${temaBorder}">
 <div class="max-w-6xl mx-auto px-4 text-center text-sm" style="opacity:0.5">
 <p>&copy; ${new Date().getFullYear()} ${data.nome_empresa}. Todos os direitos reservados.</p>
-<p class="mt-1">Criado por VMS Digital</p>
+<p class="mt-1">Criado por Startzy</p>
 </div>
 </footer>
 
@@ -582,9 +555,9 @@ export async function POST(request: NextRequest) {
     let geradoCom = "fallback";
 
     const providers: Array<{ name: string; key: string | undefined; fn: () => Promise<string> }> = [
+      { name: "anthropic", key: ANTHROPIC_API_KEY, fn: () => generateWithAnthropic(data) },
       { name: "gemini", key: GEMINI_API_KEY, fn: () => generateWithGemini(data) },
       { name: "groq", key: GROQ_API_KEY, fn: () => generateWithGroq(data) },
-      { name: "anthropic", key: ANTHROPIC_API_KEY, fn: () => generateWithAnthropic(data) },
     ];
 
     for (const provider of providers) {

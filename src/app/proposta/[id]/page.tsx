@@ -520,7 +520,7 @@ export default function PropostaPage() {
         )}
 
         <div className="mt-8 text-center">
-          <p className="text-[#333] text-xs">VMS Digital — Sites profissionais com IA</p>
+          <p className="text-[#333] text-xs">Startzy — Sites profissionais com IA</p>
         </div>
       </div>
     </div>

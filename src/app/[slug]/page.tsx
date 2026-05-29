@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -38,13 +39,9 @@ export default function RecuperarSenhaPage() {
 
       <div className="animate-scale-in relative w-full max-w-md rounded-[14px] glass p-8 glow-primaria-sm">
         <div className="mb-8 text-center">
-          <div className="animate-float mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-[14px] bg-vms-primaria/10">
-            <span className="text-2xl font-bold text-vms-primaria">V</span>
-          </div>
-          <h1 className="text-3xl font-bold">
-            <span className="text-vms-primaria text-glow">VMS</span>
-          </h1>
-          <p className="mt-1 text-sm tracking-[0.3em] text-vms-muted">DIGITAL</p>
+          <Link href="/" className="inline-block">
+            <Image src="/logo-startzy.svg" alt="Startzy" width={160} height={44} className="mx-auto" />
+          </Link>
         </div>
 
         <h2 className="mb-6 text-center text-xl font-semibold text-vms-texto">

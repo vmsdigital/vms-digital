@@ -48,47 +48,40 @@ async function searchGooglePlaces(nome: string, cidade: string) {
 
   try {
     const query = `${nome} ${cidade}`;
-    const res = await fetch(
-      `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${apiKey}`,
-      { signal: AbortSignal.timeout(8000) }
-    );
+    const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.location,places.websiteUri,places.nationalPhoneNumber",
+        "Referer": "https://startzy.com.br",
+      },
+      body: JSON.stringify({
+        textQuery: query,
+        maxResultCount: 1,
+        languageCode: "pt-BR",
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
 
     if (!res.ok) return null;
 
     const data = await res.json();
-    const place = data.results?.[0];
+    const place = data.places?.[0];
 
     if (!place) return null;
 
-    let telefone = null;
-    let website = null;
-
-    if (place.place_id) {
-      try {
-        const detailRes = await fetch(
-          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=formatted_phone_number,website,rating,user_ratings_total,url&key=${apiKey}`,
-          { signal: AbortSignal.timeout(5000) }
-        );
-
-        if (detailRes.ok) {
-          const detail = await detailRes.json();
-          telefone = detail.result?.formatted_phone_number || null;
-          website = detail.result?.website || null;
-        }
-      } catch {}
-    }
-
     return {
       encontrado: true,
-      nome: place.name,
-      endereco: place.formatted_address || null,
-      telefone,
-      website,
+      nome: place.displayName?.text || nome,
+      endereco: place.formattedAddress || null,
+      telefone: place.nationalPhoneNumber || null,
+      website: place.websiteUri || null,
       avaliacao: place.rating || null,
-      total_avaliacoes: place.user_ratings_total || null,
-      lat: place.geometry?.location?.lat || null,
-      lon: place.geometry?.location?.lng || null,
-      google_url: place.place_id ? `https://maps.google.com/?cid=${place.place_id}` : null,
+      total_avaliacoes: place.userRatingCount || null,
+      lat: place.location?.latitude || null,
+      lon: place.location?.longitude || null,
+      google_url: place.id ? `https://maps.google.com/?cid=${place.id}` : null,
       fonte: "google",
     };
   } catch {

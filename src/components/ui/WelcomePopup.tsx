@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 const STEPS = [
   {
     icon: <Sparkles size={24} />,
-    title: "Bem-vindo à VMS Digital!",
+    title: "Bem-vindo à Startzy!",
     description:
       "Crie sites profissionais em segundos com inteligência artificial. Venda, alugue ou gerencie sites para seus clientes.",
   },

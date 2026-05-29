@@ -18,6 +18,8 @@ import {
   Zap,
   X,
   BarChart3,
+  Bot,
+  Wallet,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -118,14 +120,16 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       title: "Vendas",
       items: [
         { label: "Prospecção", href: "/prospeccao", icon: Search },
-        { label: "Propostas", href: "/propostas", icon: Send, badge: propostasPendentes > 0 ? { text: String(propostasPendentes), variant: "green" } : undefined },
-        { label: "Clientes", href: "/clientes", icon: Users, badge: clientesCount > 0 ? { text: String(clientesCount), variant: "blue" } : undefined },
+        { label: "Agente IA", href: "/agente", icon: Bot, badge: { text: "BETA", variant: "new" as const } },
+        { label: "Propostas", href: "/propostas", icon: Send, badge: propostasPendentes > 0 ? { text: String(propostasPendentes), variant: "green" as const } : undefined },
+        { label: "Clientes", href: "/clientes", icon: Users, badge: clientesCount > 0 ? { text: String(clientesCount), variant: "blue" as const } : undefined },
       ],
     },
     {
       title: "Plataforma",
       items: [
         { label: "Afiliados", href: "/afiliados", icon: TrendingUp, badge: planoInfo.afiliados ? { text: "PRO", variant: "purple" } : undefined },
+        { label: "Carteira", href: "/carteira", icon: Wallet },
         { label: "Financeiro", href: "/financeiro", icon: DollarSign },
         { label: "Relatórios", href: "/relatorios", icon: BarChart3 },
       ],
@@ -161,7 +165,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         <div className="flex h-[64px] items-center justify-between px-[22px] border-b border-vms-borda">
           <Link href="/dashboard" className="flex items-center">
             <Image
-              src="/logo-vms.svg"
+              src="/logo-startzy.svg"
               alt="Startzy"
               width={120}
               height={36}

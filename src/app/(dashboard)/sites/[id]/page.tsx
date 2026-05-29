@@ -306,7 +306,7 @@ function CriarSiteContent() {
       criador_id: user.id,
       nome_site: form.nome_empresa,
       nicho: form.nicho || "outro",
-      slug: `${slug}.vmsdigital.com.br`,
+      slug: `${slug}.startzy.com.br`,
       publicado: true,
       dados_json: {
         descricao: form.descricao,

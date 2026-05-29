@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
 function buildEditPrompt(htmlAtual: string, instrucao: string): string {
   return `Você é um especialista em desenvolvimento web e design. Sua tarefa é editar o HTML de um site existente seguindo a instrução do usuário.
@@ -36,7 +38,7 @@ async function editWithGemini(htmlAtual: string, instrucao: string): Promise<str
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 8192, temperature: 0.5 },
+      generationConfig: { maxOutputTokens: 16384, temperature: 0.5 },
     }),
   });
 
@@ -70,6 +72,32 @@ async function editWithGroq(htmlAtual: string, instrucao: string): Promise<strin
   return cleanHtmlOutput(html);
 }
 
+async function editWithClaude(htmlAtual: string, instrucao: string): Promise<string> {
+  if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY não configurada");
+
+  const userMessage = buildEditPrompt(htmlAtual, instrucao);
+
+  const res = await fetch(ANTHROPIC_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 16384,
+      messages: [{ role: "user", content: userMessage }],
+    }),
+  });
+
+  if (!res.ok) throw new Error(`Claude API error: ${res.status}`);
+  const result = await res.json();
+  let html = result.content?.[0]?.text || "";
+  return cleanHtmlOutput(html);
+}
+
 function cleanHtmlOutput(html: string): string {
   html = html.replace(/```html\n?/g, "").replace(/```\n?/g, "").trim();
   if (!html.startsWith("<!DOCTYPE") && !html.startsWith("<html")) {
@@ -84,7 +112,7 @@ function cleanHtmlOutput(html: string): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { html_atual, instrucao, site_id } = body;
+    const { html_atual, instrucao } = body;
 
     if (!html_atual || !instrucao) {
       return NextResponse.json(
@@ -100,11 +128,15 @@ export async function POST(request: NextRequest) {
     } catch {
       try {
         html = await editWithGroq(html_atual, instrucao);
-      } catch (groqErr) {
-        return NextResponse.json(
-          { error: "Todas as IAs falharam. Tente novamente." },
-          { status: 500 }
-        );
+      } catch {
+        try {
+          html = await editWithClaude(html_atual, instrucao);
+        } catch {
+          return NextResponse.json(
+            { error: "Todas as IAs falharam. Tente novamente." },
+            { status: 500 }
+          );
+        }
       }
     }
 

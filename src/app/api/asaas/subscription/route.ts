@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
         billingType: formaPagamento || "UNDEFINED",
         value: valor,
         cycle: ciclo || "MONTHLY",
-        description: descricao || "Assinatura VMS Digital",
+        description: descricao || "Assinatura Startzy",
         notificationDisabled: false,
       }),
     });

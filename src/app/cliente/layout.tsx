@@ -113,7 +113,7 @@ export default function ClienteLayout({ children }: ClienteLayoutProps) {
         <div className="flex h-[54px] items-center justify-between px-5">
           <div className="flex items-center gap-2">
             <Image
-              src="/logo-vms.svg"
+              src="/logo-startzy.svg"
               alt="Startzy"
               width={80}
               height={24}
@@ -138,7 +138,7 @@ export default function ClienteLayout({ children }: ClienteLayoutProps) {
               </span>
             </div>
             <p className="mt-1 text-[11px] text-vms-muted">
-              {site.slug || "seusite.vmsdigital.com.br"}
+              {site.slug || "seusite.startzy.com.br"}
             </p>
           </div>
         )}

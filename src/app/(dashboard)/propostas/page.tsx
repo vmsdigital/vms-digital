@@ -74,6 +74,7 @@ export default function PropostasPage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [detailProposta, setDetailProposta] = useState<Proposta | null>(null);
 
   const [formNome, setFormNome] = useState("");
@@ -116,6 +117,7 @@ export default function PropostasPage() {
   useEffect(() => {
     function handleClickOutside() {
       setMenuOpen(null);
+      setDeleteConfirm(null);
     }
     if (menuOpen) {
       document.addEventListener("click", handleClickOutside);
@@ -178,10 +180,23 @@ export default function PropostasPage() {
   }
 
   async function handleDeleteProposta(propostaId: string) {
-    const supabase = createClient();
-    await supabase.from("propostas").delete().eq("id", propostaId);
-    setPropostas((prev) => prev.filter((p) => p.id !== propostaId));
+    try {
+      const res = await fetch("/api/propostas/excluir", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ proposta_id: propostaId }),
+      });
+      if (res.ok) {
+        setPropostas((prev) => prev.filter((p) => p.id !== propostaId));
+      } else {
+        const data = await res.json().catch(() => ({}));
+        console.error("Erro ao excluir proposta:", data.error || "Erro desconhecido");
+      }
+    } catch (err) {
+      console.error("Erro ao excluir proposta:", err);
+    }
     setMenuOpen(null);
+    setDeleteConfirm(null);
   }
 
   async function handleSaveDetail() {
@@ -579,7 +594,7 @@ export default function PropostasPage() {
                     return (
                       <div
                         key={proposta.id}
-                        className="glass rounded-[10px] overflow-hidden flex flex-col hover:border-vms-primaria/10 transition-all cursor-pointer"
+                        className="glass rounded-[10px] overflow-visible flex flex-col hover:border-vms-primaria/10 transition-all cursor-pointer"
                         onClick={() => {
                           setEditNotas(proposta.notas || "");
                           setEditClienteId(proposta.cliente_id || "");
@@ -631,11 +646,16 @@ export default function PropostasPage() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleDeleteProposta(proposta.id);
+                                      if (deleteConfirm === proposta.id) {
+                                        handleDeleteProposta(proposta.id);
+                                      } else {
+                                        setDeleteConfirm(proposta.id);
+                                      }
                                     }}
                                     className="flex items-center gap-2 w-full px-3 py-2 text-xs text-vms-red-light hover:bg-vms-red-bg transition-colors"
                                   >
-                                    <Trash2 size={12} /> Excluir
+                                    <Trash2 size={12} />
+                                    {deleteConfirm === proposta.id ? "Confirmar exclusão?" : "Excluir"}
                                   </button>
                                 </div>
                               )}

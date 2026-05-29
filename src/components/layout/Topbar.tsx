@@ -206,8 +206,8 @@ export default function Topbar({ title, onMenuToggle }: TopbarProps) {
           </button>
 
           {notifOpen && (
-            <div className="absolute right-0 top-full mt-2 w-[calc(100vw-3rem)] sm:w-[320px] rounded-[14px] border border-vms-borda bg-vms-card p-0 shadow-2xl max-h-80 overflow-y-auto z-50 animate-fade-in">
-              <div className="flex items-center justify-between border-b border-vms-borda px-4 py-3">
+            <div className="absolute right-0 top-full mt-2 w-[calc(100vw-3rem)] sm:w-[400px] rounded-[14px] border border-vms-borda bg-vms-card p-0 shadow-2xl max-h-[480px] overflow-y-auto z-50 animate-fade-in">
+              <div className="flex items-center justify-between border-b border-vms-borda px-4 py-3 sticky top-0 bg-vms-card z-10">
                 <span className="text-[13px] font-semibold text-vms-texto">
                   Notificações
                 </span>
@@ -242,43 +242,87 @@ export default function Topbar({ title, onMenuToggle }: TopbarProps) {
                 </div>
               ) : (
                 <div className="divide-y divide-vms-borda">
-                  {notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      onClick={() => {
-                        if (!n.lida) handleMarkRead(n.id);
-                      }}
-                      className={`flex w-full items-start gap-3 px-4 py-3 transition-colors hover:bg-white/[0.03] text-left relative group cursor-pointer ${
-                        !n.lida ? "bg-vms-primaria-dim" : ""
-                      }`}
-                    >
-                      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-vms-primaria-20 text-vms-primaria">
-                        {tipoIcons[n.tipo] || <Bell size={14} />}
+                  {(() => {
+                    const categories: Record<string, { label: string; color: string; items: Notificacao[] }> = {};
+                    const categoryOrder = ["cliente_novo", "proposta", "pagamento", "site_publicado", "atualizacao", "sistema"];
+                    const categoryLabels: Record<string, { label: string; color: string }> = {
+                      cliente_novo: { label: "Clientes", color: "text-blue-400" },
+                      proposta: { label: "Propostas", color: "text-green-400" },
+                      pagamento: { label: "Pagamentos", color: "text-yellow-400" },
+                      site_publicado: { label: "Sites", color: "text-vms-primaria" },
+                      atualizacao: { label: "Atualizações", color: "text-purple-400" },
+                      sistema: { label: "Sistema", color: "text-vms-ghost" },
+                    };
+
+                    for (const n of notifications) {
+                      const cat = n.tipo || "sistema";
+                      if (!categories[cat]) {
+                        categories[cat] = {
+                          label: categoryLabels[cat]?.label || "Outros",
+                          color: categoryLabels[cat]?.color || "text-vms-ghost",
+                          items: [],
+                        };
+                      }
+                      categories[cat].items.push(n);
+                    }
+
+                    const sortedCategories = Object.entries(categories).sort(
+                      ([a], [b]) => categoryOrder.indexOf(a) - categoryOrder.indexOf(b)
+                    );
+
+                    const unreadFirst = (a: Notificacao, b: Notificacao) => {
+                      if (!a.lida && b.lida) return -1;
+                      if (a.lida && !b.lida) return 1;
+                      return 0;
+                    };
+
+                    return sortedCategories.map(([catKey, cat]) => (
+                      <div key={catKey}>
+                        <div className="px-4 py-2 bg-vms-dark-3/50 sticky top-[49px] z-[5]">
+                          <span className={`text-[10px] font-semibold uppercase tracking-wider ${cat.color}`}>
+                            {cat.label} ({cat.items.length})
+                          </span>
+                        </div>
+                        {cat.items.sort(unreadFirst).map((n) => (
+                          <div
+                            key={n.id}
+                            onClick={() => {
+                              if (!n.lida) handleMarkRead(n.id);
+                            }}
+                            className={`flex w-full items-start gap-3 px-4 py-3 transition-colors hover:bg-white/[0.03] text-left relative group cursor-pointer ${
+                              !n.lida ? "bg-vms-primaria-dim" : ""
+                            }`}
+                          >
+                            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-vms-primaria-20 text-vms-primaria">
+                              {tipoIcons[n.tipo] || <Bell size={14} />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[12px] text-vms-texto leading-snug font-medium">
+                                {n.titulo}
+                              </p>
+                              <p className="text-[11px] text-vms-texto-2 leading-relaxed mt-0.5">
+                                {n.mensagem}
+                              </p>
+                              <span className="text-[10px] text-vms-ghost mt-1 block font-mono">
+                                {formatTimeAgo(n.criado_em)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {!n.lida && (
+                                <span className="mt-1.5 h-[5px] w-[5px] rounded-full bg-vms-primaria" style={{ boxShadow: "0 0 4px #C8F135" }} />
+                              )}
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDeleteNotif(n.id); }}
+                                className="p-1 rounded text-vms-dark-5 hover:text-vms-red-light opacity-0 group-hover:opacity-100 transition-all"
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[12px] text-vms-texto leading-snug font-medium">
-                          {n.titulo}
-                        </p>
-                        <p className="text-[11px] text-vms-texto-2 leading-snug mt-0.5 line-clamp-2">
-                          {n.mensagem}
-                        </p>
-                        <span className="text-[10px] text-vms-ghost mt-1 block font-mono">
-                          {formatTimeAgo(n.criado_em)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {!n.lida && (
-                          <span className="mt-1.5 h-[5px] w-[5px] rounded-full bg-vms-primaria" style={{ boxShadow: "0 0 4px #C8F135" }} />
-                        )}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDeleteNotif(n.id); }}
-                          className="p-1 rounded text-vms-dark-5 hover:text-vms-red-light opacity-0 group-hover:opacity-100 transition-all"
-                        >
-                          <Trash2 size={11} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    ));
+                  })()}
                 </div>
               )}
             </div>

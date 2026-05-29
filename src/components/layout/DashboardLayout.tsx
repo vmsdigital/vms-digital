@@ -7,7 +7,6 @@ import Topbar from "./Topbar";
 import CommandPalette from "@/components/ui/CommandPalette";
 import FloatingParticles from "@/components/ui/FloatingParticles";
 import StartzyChat from "@/components/ui/StartzyChat";
-import { ToastProvider } from "@/components/ui/Toast";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { createClient } from "@/lib/supabase/client";
 
@@ -91,9 +90,5 @@ function DashboardInner({
 }
 
 export default function DashboardLayout(props: DashboardLayoutProps) {
-  return (
-    <ToastProvider>
-      <DashboardInner {...props} />
-    </ToastProvider>
-  );
+  return <DashboardInner {...props} />;
 }

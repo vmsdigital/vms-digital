@@ -304,11 +304,11 @@ export default function ClienteDominioPage() {
                   <div>
                     <p className="text-xs text-vms-muted">Valor / Destino</p>
                     <p className="text-sm text-vms-texto-2">
-                      cname.vmsdigital.com.br
+                      cname.startzy.com.br
                     </p>
                   </div>
                   <button
-                    onClick={() => handleCopy("cname.vmsdigital.com.br")}
+                    onClick={() => handleCopy("cname.startzy.com.br")}
                     className="text-vms-muted hover:text-vms-texto-2 transition-colors"
                   >
                     <Copy className="h-3.5 w-3.5" />

@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       billingType,
       value: valor,
       dueDate: vencimento || new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0],
-      description: descricao || `Publicação de site - VMS Digital${siteId ? ` (${siteId})` : ""}`,
+      description: descricao || `Publicação de site - Startzy${siteId ? ` (${siteId})` : ""}`,
       notificationDisabled: false,
     };
 

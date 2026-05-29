@@ -16,9 +16,13 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
+  const [introComplete, setIntroComplete] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowIntro(false), 3200);
+    const timer = setTimeout(() => {
+      setShowIntro(false);
+      setIntroComplete(true);
+    }, 3200);
     return () => clearTimeout(timer);
   }, []);
 
@@ -83,8 +87,8 @@ function LoginForm() {
 
   return (
     <>
-      {showIntro && (
-        <div className="intro-overlay">
+      {(showIntro || !introComplete) && (
+        <div className={`intro-overlay${introComplete ? " fade-out-complete" : ""}`}>
           <img
             src="/animacao-entrada.gif"
             alt="Startzy"
@@ -100,7 +104,7 @@ function LoginForm() {
       <div className="animate-scale-in relative w-full max-w-[420px] rounded-[18px] glass p-8 glow-primaria-sm">
         <div className="mb-8 text-center">
           <Image
-            src="/logo-vms.svg"
+            src="/logo-startzy.svg"
             alt="Startzy"
             width={140}
             height={40}

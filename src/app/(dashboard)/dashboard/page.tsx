@@ -67,7 +67,7 @@ export default function DashboardPage() {
         .eq("criador_id", user.id)
         .order("criado_em", { ascending: false }),
       supabase.from("clientes").select("*").eq("criador_id", user.id),
-      supabase.from("prospeccao").select("id", { count: "exact", head: true }).eq("criador_id", user.id).gte("criado_em", inicioMes),
+      supabase.from("prospeccoes").select("id", { count: "exact", head: true }).eq("criador_id", user.id).gte("criado_em", inicioMes),
     ]);
 
     setData({

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Search, Eye, Sparkles, Download, Star, Filter, Grid3X3 } from "lucide-react";
+import { Search, Eye, Sparkles, Download, Star, Filter, Grid3X3, Lock } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 interface Template {
   id: string;
@@ -60,6 +61,21 @@ export default function TemplatesPage() {
   const [busca, setBusca] = useState("");
   const [categoriaAtiva, setCategoriaAtiva] = useState("Todos");
   const [showFiltros, setShowFiltros] = useState(false);
+  const [plano, setPlano] = useState("gratuito");
+
+  useEffect(() => {
+    async function loadPlano() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from("usuarios").select("plano").eq("id", user.id).single();
+        if (data?.plano) setPlano(data.plano);
+      }
+    }
+    loadPlano();
+  }, []);
+
+  const isPlanoPago = plano !== "gratuito";
 
   const templatesFiltrados = templates.filter((t) => {
     const matchCategoria = categoriaAtiva === "Todos" || t.categoria === categoriaAtiva;
@@ -122,7 +138,7 @@ export default function TemplatesPage() {
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {destaques.map((template) => (
-                <TemplateCard key={template.id} template={template} destaque />
+                <TemplateCard key={template.id} template={template} destaque isPlanoPago={isPlanoPago} />
               ))}
             </div>
           </div>
@@ -150,7 +166,7 @@ export default function TemplatesPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {(categoriaAtiva === "Todos" && !busca ? normais : templatesFiltrados).map((template) => (
-                <TemplateCard key={template.id} template={template} />
+                <TemplateCard key={template.id} template={template} isPlanoPago={isPlanoPago} />
               ))}
             </div>
           )}
@@ -160,10 +176,11 @@ export default function TemplatesPage() {
   );
 }
 
-function TemplateCard({ template, destaque = false }: { template: Template; destaque?: boolean }) {
+function TemplateCard({ template, destaque = false, isPlanoPago = false }: { template: Template; destaque?: boolean; isPlanoPago?: boolean }) {
+  const bloqueado = !template.gratuito && !isPlanoPago;
   return (
     <div
-      className={`group glass-card-premium rounded-[14px] overflow-hidden transition-all hover:border-vms-primaria/30 ${destaque ? "ring-1 ring-vms-primaria/20" : ""}`}
+      className={`group glass-card-premium rounded-[14px] overflow-hidden transition-all hover:border-vms-primaria/30 ${destaque ? "ring-1 ring-vms-primaria/20" : ""} ${bloqueado ? "opacity-70" : ""}`}
     >
       <div
         className={`relative flex h-32 items-center justify-center bg-gradient-to-br ${template.cor}`}
@@ -185,10 +202,17 @@ function TemplateCard({ template, destaque = false }: { template: Template; dest
               <Eye size={13} />
               Preview
             </button>
-            <button className="inline-flex items-center gap-1.5 rounded-[8px] bg-white/10 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 transition-all">
-              <Sparkles size={13} />
-              Usar
-            </button>
+            {bloqueado ? (
+              <button className="inline-flex items-center gap-1.5 rounded-[8px] bg-white/10 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-white cursor-not-allowed">
+                <Lock size={13} />
+                PRO
+              </button>
+            ) : (
+              <button className="inline-flex items-center gap-1.5 rounded-[8px] bg-white/10 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 transition-all">
+                <Sparkles size={13} />
+                Usar
+              </button>
+            )}
           </div>
         </div>
       </div>

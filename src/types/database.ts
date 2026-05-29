@@ -17,11 +17,12 @@ export interface Site {
   nome_site: string;
   nicho: string;
   slug: string | null;
-  dominio_personalizado: string | null;
   dados_json: Record<string, unknown> | null;
   template_id: string | null;
   publicado: boolean;
   criado_em: string;
+  favorito?: boolean;
+  dominio_personalizado?: string | null;
 }
 
 export interface Cliente {
@@ -45,7 +46,7 @@ export interface Proposta {
   criador_id: string;
   site_id: string | null;
   cliente_id: string | null;
-  nome_prospect: string;
+  nome_prospect: string | null;
   whatsapp: string | null;
   status: "gerado" | "enviado" | "negociando" | "fechado" | "perdido";
   valor_proposto: number | null;
@@ -102,7 +103,7 @@ export interface Transacao {
   criador_id: string;
   cliente_id: string | null;
   site_id: string | null;
-  tipo: "receita" | "reembolso" | "comissao";
+  tipo: "receita" | "despesa" | "mensalidade" | "reembolso" | "comissao" | "assinatura";
   valor: number;
   status: "pago" | "pendente" | "atrasado";
   descricao: string | null;
@@ -111,6 +112,16 @@ export interface Transacao {
   criado_em: string;
   clientes?: { nome: string } | null;
   sites?: { nome_site: string } | null;
+}
+
+export interface Carteira {
+  id: string;
+  criador_id: string;
+  saldo: number;
+  total_entradas: number;
+  total_saidas: number;
+  mensalidades_mes: number;
+  atualizado_em: string;
 }
 
 export interface Afiliado {
@@ -132,6 +143,33 @@ export interface Indicacao {
   status: "pendente" | "pago";
   criado_em: string;
   indicados?: { nome: string; email: string; plano: string } | null;
+}
+
+export interface AgenteTarefa {
+  id: string;
+  criador_id: string;
+  segmento: string;
+  cidade: string;
+  raio_km: number;
+  quantidade: number;
+  status: "pendente" | "agendado" | "prospectando" | "gerando" | "concluido" | "erro" | "parcial" | "cancelado";
+  filtro: "sem_site" | "todos" | "com_site";
+  tema_padrao: "claro" | "escuro";
+  cor_primaria: string;
+  cor_secundaria: string;
+  horario_limite: string;
+  avaliacao_minima: number;
+  agendado_para: string | null;
+  resultados: ProspeccaoResultado[] | null;
+  sites_criados: { site_id: string; nome: string; slug: string }[] | null;
+  sites_erro: { nome: string; erro: string }[] | null;
+  total_prospectados: number;
+  total_sites_criados: number;
+  total_erros: number;
+  log: string[] | null;
+  iniciado_em: string | null;
+  concluido_em: string | null;
+  criado_em: string;
 }
 
 export interface PagamentoAsaas {

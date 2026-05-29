@@ -15,6 +15,7 @@ import {
   Check,
   User,
   LayoutGrid,
+  Star,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/Button";
@@ -88,6 +89,7 @@ export default function SitesPage() {
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [favoritoFilter, setFavoritoFilter] = useState<"todos" | "favoritos">("todos");
 
   useEffect(() => {
     async function fetchData() {
@@ -121,11 +123,17 @@ export default function SitesPage() {
     }
   }, [menuOpen]);
 
-  const filteredSites = sites.filter((site) => {
-    const matchesSearch = site.nome_site.toLowerCase().includes(search.toLowerCase());
-    const matchesNicho = !nichoFilter || site.nicho === nichoFilter;
-    return matchesSearch && matchesNicho;
-  });
+  const filteredSites = sites
+    .filter((site) => {
+      const matchesSearch = site.nome_site.toLowerCase().includes(search.toLowerCase());
+      const matchesNicho = !nichoFilter || site.nicho === nichoFilter;
+      const matchesFavorito = favoritoFilter === "todos" || site.favorito;
+      return matchesSearch && matchesNicho && matchesFavorito;
+    })
+    .sort((a, b) => {
+      if (a.favorito === b.favorito) return 0;
+      return a.favorito ? -1 : 1;
+    });
 
   const handleCopySlug = useCallback((slug: string, siteId: string) => {
     const url = slug ? `https://${slug}` : "";
@@ -143,6 +151,16 @@ export default function SitesPage() {
     setMenuOpen(null);
   }, []);
 
+  const handleToggleFavorito = useCallback(async (siteId: string, currentFav: boolean) => {
+    const supabase = createClient();
+    const { error } = await supabase.from("sites").update({ favorito: !currentFav }).eq("id", siteId);
+    if (error) {
+      console.error("Erro ao favoritar site:", error.message);
+    } else {
+      setSites((prev) => prev.map((s) => s.id === siteId ? { ...s, favorito: !currentFav } : s));
+    }
+  }, []);
+
   function getClienteForSite(siteId: string): Cliente | null {
     return clientes.find((c) => c.site_id === siteId) ?? null;
   }
@@ -157,12 +175,20 @@ export default function SitesPage() {
               {sites.length} site{sites.length !== 1 ? "s" : ""} criado{sites.length !== 1 ? "s" : ""}
             </p>
           </div>
-          <Link href="/sites/novo">
-            <Button>
-              <Plus size={16} className="mr-1.5" />
-              Criar Site
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/templates">
+              <button className="inline-flex items-center gap-1.5 px-4 py-2 rounded-[10px] bg-vms-card border border-vms-borda text-vms-texto-2 text-[13px] font-medium hover:border-vms-primaria/30 hover:text-vms-texto transition-all">
+                <LayoutGrid size={16} />
+                Templates
+              </button>
+            </Link>
+            <Link href="/sites/novo">
+              <Button>
+                <Plus size={16} className="mr-1.5" />
+                Criar Site
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
@@ -173,6 +199,29 @@ export default function SitesPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setFavoritoFilter("todos")}
+              className={`px-3 py-2 rounded-[8px] text-xs font-medium transition-colors ${
+                favoritoFilter === "todos"
+                  ? "bg-vms-primaria/20 text-vms-primaria"
+                  : "bg-vms-dark-2 text-vms-muted hover:text-vms-texto"
+              }`}
+            >
+              Todos
+            </button>
+            <button
+              onClick={() => setFavoritoFilter("favoritos")}
+              className={`px-3 py-2 rounded-[8px] text-xs font-medium transition-colors ${
+                favoritoFilter === "favoritos"
+                  ? "bg-vms-primaria/20 text-vms-primaria"
+                  : "bg-vms-dark-2 text-vms-muted hover:text-vms-texto"
+              }`}
+            >
+              <Star size={12} className="inline mr-1" />
+              Favoritos
+            </button>
           </div>
           <div className="w-full sm:w-56">
             <Select
@@ -223,7 +272,7 @@ export default function SitesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredSites.map((site) => {
               const htmlGerado = (site.dados_json as Record<string, unknown>)?.html_gerado as string | null;
-              const siteUrl = site.slug ? `/${site.slug.replace(/\.vmsdigital\.com\.br$/, "")}` : null;
+              const siteUrl = site.slug ? `/${site.slug.replace(/\.startzy\.com\.br$/, "")}` : null;
               const cliente = getClienteForSite(site.id);
               const gradient = nichoGradients[site.nicho] ?? "from-gray-600 to-gray-500";
               const icon = nichoIcons[site.nicho] ?? "📋";
@@ -241,8 +290,22 @@ export default function SitesPage() {
                       </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        handleToggleFavorito(site.id, site.favorito ?? false);
+                      }}
+                      className="absolute top-2.5 left-2.5 z-10 p-1 rounded-full bg-black/30 backdrop-blur-md hover:bg-black/50 transition-colors"
+                    >
+                      {site.favorito ? (
+                        <Star size={14} className="text-yellow-400 fill-yellow-400" />
+                      ) : (
+                        <Star size={14} className="text-white/60" />
+                      )}
+                    </button>
                     {cliente && (
-                      <div className="absolute top-2.5 left-2.5">
+                      <div className="absolute top-2.5 left-9">
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/15 text-white border border-white/20 backdrop-blur-md">
                           <User size={8} />
                           {cliente.nome}
@@ -354,51 +417,6 @@ export default function SitesPage() {
           </div>
         )}
 
-        {templates.length > 0 && (
-          <div className="mt-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <LayoutGrid size={16} className="text-vms-primaria" />
-                <h2 className="text-vms-texto text-base font-semibold">Templates</h2>
-                <span className="text-vms-ghost text-[11px] font-mono">{templates.length} disponíveis</span>
-              </div>
-              <Link
-                href="/templates"
-                className="text-vms-primaria text-[13px] font-medium hover:text-vms-primaria-bright transition-colors"
-              >
-                Ver todos →
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              {templates.slice(0, 6).map((template) => {
-                const gradient = nichoGradients[template.nicho] ?? "from-gray-600 to-gray-500";
-                const icon = nichoIcons[template.nicho] ?? "📋";
-                const nichoLabel = NICHOS.find((n) => n.value === template.nicho)?.label ?? template.nicho;
-
-                return (
-                  <Link
-                    key={template.id}
-                    href="/sites/novo"
-                    className="group glass-card-premium rounded-[14px] overflow-hidden hover:border-vms-primaria/30 transition-all duration-200"
-                  >
-                    <div className={`relative flex h-20 items-center justify-center bg-gradient-to-br ${gradient}`}>
-                      <span className="text-2xl">{icon}</span>
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 transition-colors">
-                        <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-semibold text-vms-primaria">
-                          Usar
-                        </span>
-                      </div>
-                    </div>
-                    <div className="p-2.5">
-                      <h3 className="text-vms-texto text-[12px] font-medium truncate">{template.nome}</h3>
-                      <p className="text-vms-ghost text-[10px] mt-0.5">{nichoLabel}</p>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
     </DashboardLayout>
   );

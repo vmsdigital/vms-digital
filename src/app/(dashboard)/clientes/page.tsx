@@ -20,6 +20,7 @@ import {
   KeyRound,
   AlertCircle,
   Check,
+  Share2,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { MetricCard } from "@/components/ui/MetricCard";
@@ -73,6 +74,7 @@ export default function ClientesPage() {
   const [salvando, setSalvando] = useState(false);
   const [criandoAcesso, setCriandoAcesso] = useState<string | null>(null);
   const [acessoMsg, setAcessoMsg] = useState<{ id: string; type: "success" | "error"; text: string } | null>(null);
+  const [portalCopied, setPortalCopied] = useState<string | null>(null);
 
   const fetchClientes = useCallback(async () => {
     const supabase = createClient();
@@ -172,6 +174,13 @@ export default function ClientesPage() {
     if (cliente.site_id) {
       window.open(`/proposta/${cliente.site_id}`, "_blank");
     }
+  }
+
+  function handleSharePortal(cliente: ClienteComSite) {
+    const portalUrl = `${window.location.origin}/portal/${cliente.id}`;
+    navigator.clipboard.writeText(portalUrl);
+    setPortalCopied(cliente.id);
+    setTimeout(() => setPortalCopied(null), 2000);
   }
 
   async function handleCriarAcesso(cliente: ClienteComSite) {
@@ -458,6 +467,13 @@ export default function ClientesPage() {
                             <Globe size={14} />
                           </button>
                         )}
+                        <button
+                          onClick={() => handleSharePortal(cliente)}
+                          className="p-1.5 rounded-[8px] text-vms-muted hover:text-vms-primaria hover:bg-vms-dark-2 transition-colors cursor-pointer"
+                          title={portalCopied === cliente.id ? "Link copiado!" : "Compartilhar portal do cliente"}
+                        >
+                          {portalCopied === cliente.id ? <Check size={14} className="text-green-400" /> : <Share2 size={14} />}
+                        </button>
                         <button
                           onClick={() => handleEdit(cliente)}
                           className="p-1.5 rounded-[8px] text-vms-muted hover:text-vms-texto-2 hover:bg-vms-dark-2 transition-colors cursor-pointer"

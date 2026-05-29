@@ -241,7 +241,7 @@ export default function ConfiguracoesPage() {
           customerId: asaasCustomerId,
           valor: planoInfo.preco,
           ciclo: "MONTHLY",
-          descricao: `Assinatura VMS Digital - Plano ${planoInfo.nome}`,
+          descricao: `Assinatura Startzy - Plano ${planoInfo.nome}`,
           formaPagamento: "UNDEFINED",
         }),
       });
@@ -639,11 +639,11 @@ export default function ConfiguracoesPage() {
                       <div className="text-sm text-vms-texto">
                         <span className="text-vms-muted">www</span>
                         <span className="mx-2 text-vms-dark-5">→</span>
-                        <span>cname.vmsdigital.com.br</span>
+                        <span>cname.startzy.com.br</span>
                       </div>
                     </div>
                     <button
-                      onClick={() => handleCopy("cname.vmsdigital.com.br", "cname")}
+                      onClick={() => handleCopy("cname.startzy.com.br", "cname")}
                       className="flex items-center gap-1.5 rounded-md border border-vms-borda bg-vms-dark-2 px-3 py-1.5 text-xs text-vms-texto-2 transition-colors hover:border-vms-primaria hover:text-vms-primaria"
                     >
                       {copiedField === "cname" ? <Check size={12} /> : <Copy size={12} />}
@@ -835,10 +835,10 @@ export default function ConfiguracoesPage() {
                   <label className="mb-1.5 block text-sm text-vms-texto-2">URL do painel do cliente</label>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 rounded-[8px] border border-vms-borda bg-vms-dark-2 py-2.5 px-4 text-sm text-vms-muted">
-                      painel.vmsdigital.com.br/{usuario?.id?.slice(0, 8) || "slug"}
+                      painel.startzy.com.br/{usuario?.id?.slice(0, 8) || "slug"}
                     </div>
                     <button
-                      onClick={() => handleCopy(`painel.vmsdigital.com.br/${usuario?.id?.slice(0, 8) || "slug"}`, "painel-url")}
+                      onClick={() => handleCopy(`painel.startzy.com.br/${usuario?.id?.slice(0, 8) || "slug"}`, "painel-url")}
                       className="flex items-center gap-1.5 rounded-[8px] border border-vms-borda bg-vms-dark-2 px-3 py-2.5 text-xs text-vms-texto-2 transition-colors hover:border-vms-primaria hover:text-vms-primaria"
                     >
                       {copiedField === "painel-url" ? <Check size={12} /> : <Copy size={12} />}

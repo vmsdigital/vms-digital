@@ -19,6 +19,7 @@ import {
   Link2,
   Share2,
 } from "lucide-react";
+import { ProspecaoSpyAnimation } from "@/components/ui/ProspecaoSpyAnimation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { AlertaBanner } from "@/components/ui/AlertaBanner";
@@ -35,7 +36,8 @@ export default function ProspeccaoPage() {
   const router = useRouter();
   const [segmento, setSegmento] = useState("");
   const [cidade, setCidade] = useState("");
-  const [raioKm, setRaioKm] = useState(10);
+  const [raioKm, setRaioKm] = useState(25);
+  const [quantidadeBusca, setQuantidadeBusca] = useState(10);
   const [resultados, setResultados] = useState<ProspeccaoResultado[]>([]);
   const [todosResultados, setTodosResultados] = useState<ProspeccaoResultado[]>([]);
   const [buscando, setBuscando] = useState(false);
@@ -81,7 +83,7 @@ export default function ProspeccaoPage() {
         inicioMes.setDate(1);
         inicioMes.setHours(0, 0, 0, 0);
         const { count } = await supabase
-          .from("prospeccao")
+          .from("prospeccoes")
           .select("*", { count: "exact", head: true })
           .eq("criador_id", user.id)
           .gte("criado_em", inicioMes.toISOString());
@@ -89,7 +91,7 @@ export default function ProspeccaoPage() {
 
         const [sitesRes, prospeccoesRes] = await Promise.all([
           supabase.from("sites").select("id, nome_site, dados_json").eq("criador_id", user.id),
-          supabase.from("prospeccao").select("id, segmento, cidade, criado_em, resultados").eq("criador_id", user.id).order("criado_em", { ascending: false }).limit(20),
+          supabase.from("prospeccoes").select("id, segmento, cidade, criado_em, resultados").eq("criador_id", user.id).order("criado_em", { ascending: false }).limit(20),
         ]);
         if (sitesRes.data) setSites(sitesRes.data as Site[]);
         if (prospeccoesRes.data) setProspeccoesSalvas(prospeccoesRes.data as typeof prospeccoesSalvas);
@@ -119,6 +121,7 @@ export default function ProspeccaoPage() {
         cidade,
         raio_km: raioKm.toString(),
         pagina: "1",
+        quantidade: quantidadeBusca.toString(),
       });
 
       const res = await fetch(`/api/prospeccao/buscar?${params}`);
@@ -143,7 +146,7 @@ export default function ProspeccaoPage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase.from("prospeccao").insert({
+        await supabase.from("prospeccoes").insert({
           criador_id: user.id,
           segmento,
           cidade,
@@ -153,7 +156,7 @@ export default function ProspeccaoPage() {
         setProspeccoesMes((prev) => prev + 1);
 
         const prospeccoesRes = await supabase
-          .from("prospeccao")
+          .from("prospeccoes")
           .select("id, segmento, cidade, criado_em, resultados")
           .eq("criador_id", user.id)
           .order("criado_em", { ascending: false })
@@ -179,6 +182,7 @@ export default function ProspeccaoPage() {
         raio_km: raioKm.toString(),
         pagina: novaPagina.toString(),
         ja_vistos: jaVistosIds,
+        quantidade: quantidadeBusca.toString(),
       });
 
       const res = await fetch(`/api/prospeccao/buscar?${params}`);
@@ -200,7 +204,7 @@ export default function ProspeccaoPage() {
   function handlePaginaAnterior() {
     if (pagina <= 1) return;
     const novaPagina = pagina - 1;
-    const itensPorPagina = 10;
+    const itensPorPagina = quantidadeBusca;
     const inicio = (novaPagina - 1) * itensPorPagina;
 
     if (novaPagina === 1 && todosResultados.length === 0) {
@@ -309,6 +313,18 @@ export default function ProspeccaoPage() {
                 value={raioKm}
                 onChange={(e) => setRaioKm(Number(e.target.value))}
               />
+            </div>
+            <div className="w-[120px]">
+              <label className="mb-1.5 block text-xs font-medium text-vms-texto-2">Quantidade</label>
+              <select
+                value={quantidadeBusca}
+                onChange={(e) => setQuantidadeBusca(Number(e.target.value))}
+                className="w-full rounded-[10px] border border-vms-glass-border glass py-2 px-3 text-sm text-vms-texto outline-none focus:border-vms-primaria"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
             </div>
             <Button type="submit" disabled={buscando || !segmento || !cidade}>
               <Search size={14} className="mr-1.5" />
@@ -659,6 +675,7 @@ export default function ProspeccaoPage() {
             </div>
           </div>
         )}
+        <ProspecaoSpyAnimation isSearching={buscando} />
       </div>
     </DashboardLayout>
   );

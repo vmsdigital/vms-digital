@@ -132,7 +132,7 @@ export default function ClienteDashboardPage() {
               <span className="ml-3 text-xs text-vms-muted">
                 {site.dominio_personalizado ||
                   site.slug ||
-                  "seusite.vmsdigital.com.br"}
+                  "seusite.startzy.com.br"}
               </span>
             </div>
             <div className="flex min-h-[200px] items-center justify-center p-8">
@@ -145,7 +145,7 @@ export default function ClienteDashboardPage() {
                     "Seu site profissional está no ar"}
                 </p>
                 <a
-                  href={`https://${site.slug || "seusite"}.vmsdigital.com.br`}
+                  href={`https://${site.slug || "seusite"}.startzy.com.br`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-[8px] bg-vms-primaria/10 px-4 py-2 text-sm text-vms-primaria transition-colors hover:bg-vms-primaria/20"
@@ -277,7 +277,7 @@ export default function ClienteDashboardPage() {
                 <Globe className="h-3.5 w-3.5 text-vms-muted" />
                 <span className="text-vms-texto-2">
                   {site.dominio_personalizado ||
-                    `${site.slug || "seusite"}.vmsdigital.com.br`}
+                    `${site.slug || "seusite"}.startzy.com.br`}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-sm">
