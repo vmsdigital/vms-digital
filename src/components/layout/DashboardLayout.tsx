@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { motion } from "framer-motion";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import CommandPalette from "@/components/ui/CommandPalette";
@@ -42,18 +44,57 @@ function DashboardInner({
 
   if (!authed) {
     return (
-      <div className="flex h-screen items-center justify-center bg-vms-fundo">
-        <div className="flex flex-col items-center gap-3">
-          <div className="relative w-10 h-10">
-            <span className="absolute inset-0 flex items-center justify-center">
-              <span className="w-4 h-4 rounded-full bg-vms-primaria animate-ping opacity-75" />
-            </span>
-            <span className="absolute inset-0 flex items-center justify-center">
-              <span className="w-4 h-4 rounded-full bg-vms-primaria animate-spin [animation-duration:2s]" />
-            </span>
-          </div>
-          <span className="text-vms-ghost text-[11px] tracking-[3px] uppercase font-medium">Carregando</span>
-        </div>
+      <div className="flex h-screen items-center justify-center bg-vms-fundo overflow-hidden relative">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute rounded-full"
+            style={{
+              top: `${20 + Math.random() * 60}%`,
+              left: `${15 + Math.random() * 70}%`,
+              width: 3,
+              height: 3,
+              background: "#DFFE00",
+              boxShadow: "0 0 10px 2px rgba(223,254,0,0.4), 0 0 24px 6px rgba(223,254,0,0.15)",
+            }}
+            animate={{
+              scale: [0, 1.2, 2, 0],
+              opacity: [0, 0.7, 0.35, 0],
+              x: [
+                0,
+                (Math.random() - 0.5) * 150,
+                (Math.random() - 0.5) * 250,
+                (Math.random() - 0.5) * 350,
+              ],
+              y: [
+                0,
+                (Math.random() - 0.5) * 150,
+                (Math.random() - 0.5) * 250,
+                (Math.random() - 0.5) * 350,
+              ],
+            }}
+            transition={{
+              duration: 1.8 + Math.random(),
+              delay: i * 0.3,
+              repeat: Infinity,
+              ease: "easeOut",
+            }}
+          />
+        ))}
+        <motion.div
+          initial={{ scale: 0.4, opacity: 0, filter: "blur(16px)" }}
+          animate={{
+            scale: [0.4, 1.03, 1],
+            opacity: [0, 1, 1],
+            filter: ["blur(16px)", "blur(0px)", "blur(0px)"],
+          }}
+          transition={{
+            duration: 0.9,
+            ease: [0.16, 1, 0.3, 1],
+          }}
+        >
+          <Image src="/logo-animacao.svg" alt="Startzy" width={100} height={47} priority />
+        </motion.div>
       </div>
     );
   }

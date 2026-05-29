@@ -79,7 +79,7 @@ function Navbar() {
   return (
     <nav className={`ab-nav${scrolled ? " ab-nav-scrolled" : ""}`}>
       <a href="/" className="ab-nav-logo">
-        <Image src="/logo-startzy.svg" alt="Startzy" width={106} height={30} priority />
+        <Image src="/logo-startzy.svg" alt="Startzy" width={70} height={20} priority />
       </a>
       <div className={`ab-nav-links${menuOpen ? " ab-nav-links-open" : ""}`}>
         <a href="#como" onClick={() => setMenuOpen(false)}>Como funciona</a>
@@ -927,7 +927,7 @@ function SplashScreen() {
             ease: [0.16, 1, 0.3, 1],
           }}
         >
-          <Image src="/logo-animacao.svg" alt="Startzy" width={160} height={75} priority />
+          <Image src="/logo-animacao.svg" alt="Startzy" width={100} height={47} priority />
         </motion.div>
         <motion.div
           className="ab-splash-line"
