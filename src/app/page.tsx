@@ -940,6 +940,68 @@ function SplashScreen() {
   );
 }
 
+function SalesNotification() {
+  const [dismissed, setDismissed] = useState(false);
+  const [started, setStarted] = useState(false);
+  const [show, setShow] = useState(false);
+  const [index, setIndex] = useState(0);
+
+  const notifications = useMemo(() => [
+    "Lucas de SP acabou de faturar R$700",
+    "Ana de RJ fechou um cliente de R$1.200",
+    "Pedro de BH faturou R$500 hoje",
+    "Camila de MG fechou 2 clientes de R$800",
+    "Thiago de SP faturou R$950 essa semana",
+    "Fernanda de RJ acabou de faturar R$1.500",
+    "Roberto de BH fechou um site de R$1.200",
+    "Juliana de SP faturou R$400 hoje",
+    "Rafael de MG fechou 3 clientes de R$600",
+    "Patrícia de RJ faturou R$1.100 essa semana",
+  ], []);
+
+  useEffect(() => {
+    if (dismissed) return;
+    const timer = setTimeout(() => setStarted(true), 8000);
+    return () => clearTimeout(timer);
+  }, [dismissed]);
+
+  useEffect(() => {
+    if (!started || dismissed) return;
+
+    const showTimer = setTimeout(() => setShow(true), 600);
+    const hideTimer = setTimeout(() => setShow(false), 3600);
+    const nextTimer = setTimeout(() => {
+      setIndex((prev) => (prev + 1) % notifications.length);
+    }, 4300);
+
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+      clearTimeout(nextTimer);
+    };
+  }, [started, dismissed, index, notifications.length]);
+
+  if (dismissed || !started) return null;
+
+  return (
+    <div
+      className={`ab-sales-notification ${show ? "ab-sales-notification-visible" : "ab-sales-notification-hidden"}`}
+    >
+      <div className="ab-sales-notification-content">
+        <span className="ab-sales-notification-dot" />
+        <span className="ab-sales-notification-text">{notifications[index]}</span>
+      </div>
+      <button
+        className="ab-sales-notification-close"
+        onClick={() => setDismissed(true)}
+        aria-label="Fechar notificação"
+      >
+        <X size={14} />
+      </button>
+    </div>
+  );
+}
+
 export default function LandingPage() {
   const [showContent, setShowContent] = useState(false);
 
@@ -975,6 +1037,7 @@ export default function LandingPage() {
       <CinematicSectionDivider />
       <CTASection />
       <FooterSection />
+      <SalesNotification />
         </>
       )}
     </div>

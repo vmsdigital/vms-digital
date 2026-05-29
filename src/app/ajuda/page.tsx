@@ -1,9 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowLeft, Search, Bot, Phone, Mail, MessageCircle, ChevronDown, FileText, Shield, Cookie, Scale } from "lucide-react"
+import { ArrowLeft, Search, Bot, Phone, Mail, MessageCircle, ChevronDown, FileText, Shield, Cookie, Scale, X, Send, Sparkles, Loader2 } from "lucide-react"
+
+interface ChatMessage {
+  role: "user" | "assistant"
+  content: string
+}
 
 const faqItems = [
   {
@@ -43,12 +48,69 @@ const faqItems = [
 export default function AjudaPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const [chatOpen, setChatOpen] = useState(false)
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { role: "assistant", content: "Olá! 👋 Eu sou o assistente IA da Startzy. Como posso ajudar você hoje?" }
+  ])
+  const [chatInput, setChatInput] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const chatInputRef = useRef<HTMLInputElement>(null)
 
   const filteredFaq = faqItems.filter(
     (item) =>
       item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.answer.toLowerCase().includes(searchQuery.toLowerCase())
   )
+
+  useEffect(() => {
+    if (chatOpen) {
+      setTimeout(() => chatInputRef.current?.focus(), 150)
+    }
+  }, [chatOpen])
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages, isLoading])
+
+  const sendMessage = useCallback(async () => {
+    const text = chatInput.trim()
+    if (!text || isLoading) return
+
+    const userMessage: ChatMessage = { role: "user", content: text }
+    const updatedMessages = [...messages, userMessage]
+    setMessages(updatedMessages)
+    setChatInput("")
+    setIsLoading(true)
+
+    try {
+      const res = await fetch("/api/chat-ia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: updatedMessages })
+      })
+
+      if (!res.ok) throw new Error("Erro na requisição")
+
+      const data = await res.json()
+      setMessages((prev) => [...prev, { role: "assistant", content: data.response || "Desculpe, não consegui processar sua mensagem." }])
+    } catch {
+      setMessages((prev) => [...prev, { role: "assistant", content: "Desculpe, estou com dificuldades técnicas no momento. Por favor, tente novamente em alguns instantes ou entre em contato pelo WhatsApp." }])
+    } finally {
+      setIsLoading(false)
+    }
+  }, [chatInput, isLoading, messages])
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage()
+    }
+  }
+
+  function openChat() {
+    setChatOpen(true)
+  }
 
   return (
     <div className="min-h-screen bg-vms-fundo text-vms-texto">
@@ -96,9 +158,9 @@ export default function AjudaPage() {
         </div>
 
         <div className="mb-14">
-          <Link
-            href="/suporte"
-            className="block glass rounded-[18px] p-6 border border-vms-borda hover:border-lime-400/40 transition-all group"
+          <button
+            onClick={openChat}
+            className="w-full text-left glass rounded-[18px] p-6 border border-vms-borda hover:border-lime-400/40 transition-all group cursor-pointer"
           >
             <div className="flex items-center gap-5">
               <div className="w-14 h-14 rounded-2xl bg-lime-400/10 flex items-center justify-center flex-shrink-0 group-hover:bg-lime-400/20 transition-colors">
@@ -114,7 +176,7 @@ export default function AjudaPage() {
                 Iniciar conversa
               </span>
             </div>
-          </Link>
+          </button>
         </div>
 
         <div className="mb-14">
@@ -248,6 +310,110 @@ export default function AjudaPage() {
           </div>
         </div>
       </main>
+
+      {chatOpen && (
+        <div className="fixed inset-0 z-[60] flex justify-end">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setChatOpen(false)}
+          />
+          <div className="relative w-full max-w-md h-full flex flex-col bg-[#121212] border-l border-vms-borda shadow-2xl animate-in slide-in-from-right duration-300">
+            <div className="flex items-center gap-3 border-b border-vms-borda px-5 py-4 bg-[#0E0E0E]">
+              <div className="w-10 h-10 rounded-full bg-lime-400/15 flex items-center justify-center shrink-0">
+                <Sparkles className="w-5 h-5 text-lime-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-vms-texto">Assistente IA</p>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-vms-sucesso" />
+                  <span className="text-[11px] text-vms-muted">Online com Gemini</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setChatOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-[8px] text-vms-muted hover:text-vms-texto hover:bg-vms-dark-3 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+              {messages.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  {msg.role === "assistant" && (
+                    <div className="w-7 h-7 rounded-full bg-lime-400/15 flex items-center justify-center shrink-0 mr-2.5 mt-1">
+                      <Bot className="w-3.5 h-3.5 text-lime-400" />
+                    </div>
+                  )}
+                  <div
+                    className={`max-w-[80%] rounded-[14px] px-4 py-3 text-[13px] leading-relaxed whitespace-pre-wrap ${
+                      msg.role === "user"
+                        ? "bg-lime-400 text-vms-fundo font-medium rounded-br-[4px]"
+                        : "bg-[#1A1A1A] text-vms-texto-2 rounded-bl-[4px] border border-vms-borda/50"
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="w-7 h-7 rounded-full bg-lime-400/15 flex items-center justify-center shrink-0 mr-2.5 mt-1">
+                    <Bot className="w-3.5 h-3.5 text-lime-400" />
+                  </div>
+                  <div className="flex items-center gap-2 rounded-[14px] rounded-bl-[4px] bg-[#1A1A1A] border border-vms-borda/50 px-4 py-3">
+                    <Loader2 className="w-4 h-4 text-lime-400 animate-spin" />
+                    <span className="text-[13px] text-vms-muted">Pensando...</span>
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            <div className="border-t border-vms-borda p-4 bg-[#0E0E0E]">
+              <div className="flex items-center gap-2">
+                <input
+                  ref={chatInputRef}
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Digite sua dúvida..."
+                  disabled={isLoading}
+                  className="flex-1 rounded-[12px] border border-vms-borda bg-[#1A1A1A] px-4 py-3 text-[13px] text-vms-texto placeholder-vms-ghost outline-none transition-all focus:border-lime-400/50 focus:shadow-[0_0_0_1px_rgba(200,241,53,0.08)] disabled:opacity-50"
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={!chatInput.trim() || isLoading}
+                  className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-lime-400 text-vms-fundo hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shrink-0"
+                >
+                  <Send size={16} />
+                </button>
+              </div>
+              <p className="text-[10px] text-vms-muted mt-2 text-center">
+                Powered by Gemini AI · Respostas geradas por IA
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!chatOpen && (
+        <button
+          onClick={openChat}
+          className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-lime-400 shadow-lg shadow-lime-400/20 hover:brightness-110 transition-all cursor-pointer group"
+        >
+          <div className="absolute -top-10 right-0 whitespace-nowrap rounded-[8px] bg-vms-dark-2 px-3 py-1.5 text-xs font-medium text-vms-texto opacity-0 shadow-lg transition-opacity group-hover:opacity-100 pointer-events-none">
+            Assistente IA
+          </div>
+          <Bot className="w-6 h-6 text-vms-fundo" />
+        </button>
+      )}
     </div>
   )
 }

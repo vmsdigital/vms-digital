@@ -565,7 +565,7 @@ select option {
 .ab-nav-logo {
   display:flex; align-items:center; text-decoration:none;
 }
-.ab-nav-logo img { height:42px; width:auto; }
+.ab-nav-logo img { height:22px; width:auto; }
 .ab-nav-links {
   display:flex; align-items:center; gap:28px;
 }
@@ -1129,6 +1129,87 @@ select option {
   border-radius:2px;
 }
 
+/* ===== SALES NOTIFICATION ===== */
+
+.ab-sales-notification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: rgba(14, 14, 14, 0.85);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  border: 1px solid var(--lime-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(200, 241, 53, 0.04);
+  max-width: 360px;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ab-sales-notification-hidden {
+  transform: translateX(calc(100% + 40px));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ab-sales-notification-visible {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ab-sales-notification-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ab-sales-notification-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--lime);
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: ab-pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(200, 241, 53, 0.4);
+}
+
+.ab-sales-notification-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ab-sales-notification-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: var(--text-ghost);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.ab-sales-notification-close:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
 /* ===== RESPONSIVE ===== */
 
 @media (max-width:1024px) {
@@ -1138,6 +1219,7 @@ select option {
 }
 
 @media (max-width:900px) {
+  .ab-sales-notification { display: none; }
   .ab-nav { padding:0 20px; }
   .ab-nav-links { display:none; }
   .ab-nav-links-open {
