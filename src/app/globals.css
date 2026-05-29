@@ -1103,15 +1103,27 @@ select option {
   position:fixed; inset:0; z-index:9999;
   display:flex; align-items:center; justify-content:center;
   background:#09090b;
+  overflow:hidden;
+}
+.ab-splash-lights {
+  position:absolute; inset:0; pointer-events:none;
+}
+.ab-splash-light {
+  position:absolute;
+  width:4px; height:4px;
+  border-radius:50%;
+  background:#DFFE00;
+  box-shadow:0 0 12px 3px rgba(223,254,0,0.5), 0 0 30px 8px rgba(223,254,0,0.2);
 }
 .ab-splash-inner {
-  display:flex; flex-direction:column; align-items:center; gap:24px;
+  position:relative; z-index:1;
+  display:flex; flex-direction:column; align-items:center; gap:20px;
 }
 .ab-splash-logo {
   display:flex; align-items:center; justify-content:center;
 }
 .ab-splash-line {
-  width:120px; height:2px;
+  width:100px; height:2px;
   background:linear-gradient(90deg, transparent, #DFFE00, transparent);
   transform-origin:center;
   border-radius:2px;

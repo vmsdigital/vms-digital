@@ -79,7 +79,7 @@ function Navbar() {
   return (
     <nav className={`ab-nav${scrolled ? " ab-nav-scrolled" : ""}`}>
       <a href="/" className="ab-nav-logo">
-        <Image src="/logo-startzy.svg" alt="Startzy" width={180} height={50} priority />
+        <Image src="/logo-startzy.svg" alt="Startzy" width={106} height={30} priority />
       </a>
       <div className={`ab-nav-links${menuOpen ? " ab-nav-links-open" : ""}`}>
         <a href="#como" onClick={() => setMenuOpen(false)}>Como funciona</a>
@@ -773,7 +773,7 @@ function FooterSection() {
       <div className="ab-container">
         <div className="ab-footer-top">
           <div className="ab-footer-brand">
-            <Image src="/logo-startzy.svg" alt="Startzy" width={160} height={48} className="ab-footer-logo" />
+            <Image src="/logo-startzy.svg" alt="Startzy" width={120} height={36} className="ab-footer-logo" />
             <p>Plataforma de agências digitais. Crie sites com IA e fature com recorrência.</p>
           </div>
           <div className="ab-footer-col">
@@ -873,20 +873,67 @@ function SplashScreen() {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5, ease: "easeInOut" }}
     >
+      <div className="ab-splash-lights">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <motion.div
+            key={i}
+            className="ab-splash-light"
+            style={{
+              top: `${15 + Math.random() * 70}%`,
+              left: `${10 + Math.random() * 80}%`,
+            }}
+            initial={{
+              scale: 0,
+              opacity: 0,
+              x: 0,
+              y: 0,
+            }}
+            animate={{
+              scale: [0, 1, 2, 0],
+              opacity: [0, 0.8, 0.4, 0],
+              x: [
+                0,
+                (Math.random() - 0.5) * 200,
+                (Math.random() - 0.5) * 300,
+                (Math.random() - 0.5) * 400,
+              ],
+              y: [
+                0,
+                (Math.random() - 0.5) * 200,
+                (Math.random() - 0.5) * 300,
+                (Math.random() - 0.5) * 400,
+              ],
+            }}
+            transition={{
+              duration: 2 + Math.random(),
+              delay: i * 0.25,
+              repeat: Infinity,
+              ease: "easeOut",
+            }}
+          />
+        ))}
+      </div>
       <div className="ab-splash-inner">
         <motion.div
           className="ab-splash-logo"
-          initial={{ scale: 0.6, opacity: 0, filter: "blur(20px)" }}
-          animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          initial={{ scale: 0.4, opacity: 0, filter: "blur(20px)" }}
+          animate={{
+            scale: [0.4, 1.05, 1],
+            opacity: [0, 1, 1],
+            filter: ["blur(20px)", "blur(0px)", "blur(0px)"],
+          }}
+          transition={{
+            duration: 1,
+            ease: [0.16, 1, 0.3, 1],
+          }}
         >
-          <Image src="/logo-animacao.svg" alt="Startzy" width={280} height={130} priority />
+          <Image src="/logo-animacao.svg" alt="Startzy" width={160} height={75} priority />
         </motion.div>
         <motion.div
           className="ab-splash-line"
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
-          transition={{ duration: 0.6, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.6, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
         />
       </div>
     </motion.div>
