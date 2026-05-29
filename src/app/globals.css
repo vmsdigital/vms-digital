@@ -632,7 +632,7 @@ select option {
   position:absolute; inset:0; z-index:0;
   background-image:url('/hero-bg.jpg');
   background-size:cover; background-position:center; background-repeat:no-repeat;
-  opacity:0.18;
+  opacity:0.7;
 }
 .ab-hero-overlay {
   position:absolute; inset:0; z-index:0;
@@ -1095,6 +1095,26 @@ select option {
 .ab-cinematic-divider-static {
   height:40px; position:relative; display:flex; align-items:center; justify-content:center;
   overflow:hidden;
+}
+
+/* ===== SPLASH SCREEN ===== */
+
+.ab-splash {
+  position:fixed; inset:0; z-index:9999;
+  display:flex; align-items:center; justify-content:center;
+  background:#09090b;
+}
+.ab-splash-inner {
+  display:flex; flex-direction:column; align-items:center; gap:24px;
+}
+.ab-splash-logo {
+  display:flex; align-items:center; justify-content:center;
+}
+.ab-splash-line {
+  width:120px; height:2px;
+  background:linear-gradient(90deg, transparent, #DFFE00, transparent);
+  transform-origin:center;
+  border-radius:2px;
 }
 
 /* ===== RESPONSIVE ===== */

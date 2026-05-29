@@ -16,12 +16,24 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: "Startzy — Crie sites com IA e fature como agência",
-    template: "%s | Startzy",
-  },
+  title: "Startzy",
   description:
-    "Crie sites profissionais em minutos com IA. Prospecção, criação e gestão — tudo em uma plataforma para agências digitais.",
+    "Startzy — Plataforma de IA para agências digitais. Crie sites profissionais em minutos, faça prospecção automática e gere receita recorrente. Comece grátis.",
+  keywords: [
+    "startzy",
+    "plataforma de ia para agencias",
+    "criar site com ia",
+    "prospeccao automatica",
+    "agencia digital",
+    "site profissional com ia",
+    "faturamento recorrente",
+    "ia para marketing",
+    "criacao de sites automatica",
+    "gestao de clientes",
+  ],
+  authors: [{ name: "Startzy" }],
+  creator: "Startzy",
+  publisher: "Startzy",
   metadataBase: new URL("https://startzy.com.br"),
   alternates: {
     canonical: "https://startzy.com.br",
@@ -31,23 +43,41 @@ export const metadata: Metadata = {
     locale: "pt_BR",
     url: "https://startzy.com.br",
     siteName: "Startzy",
-    title: "Startzy — Crie sites com IA e fature como agência",
+    title: "Startzy — Plataforma de IA para Agências Digitais",
     description:
-      "Crie sites profissionais em minutos com IA. Prospecção, criação e gestão — tudo em uma plataforma.",
+      "Crie sites profissionais em minutos com IA. Prospecção automática, gestão de clientes e faturamento recorrente — tudo em uma plataforma.",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Startzy — Plataforma de IA para Agências Digitais",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Startzy — Crie sites com IA e fature como agência",
+    title: "Startzy — Plataforma de IA para Agências Digitais",
     description:
-      "Crie sites profissionais em minutos com IA. Prospecção, criação e gestão — tudo em uma plataforma.",
+      "Crie sites profissionais em minutos com IA. Prospecção automática e gestão de clientes.",
+    images: ["/og-image.jpg"],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
   icons: {
     icon: "/favicon.svg",
+    apple: "/favicon.svg",
   },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -60,6 +90,42 @@ export default function RootLayout({
       lang="pt-BR"
       className={`${inter.variable} ${dmMono.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              name: "Startzy",
+              applicationCategory: "BusinessApplication",
+              operatingSystem: "Web",
+              description:
+                "Plataforma de IA para agências digitais. Crie sites profissionais em minutos, faça prospecção automática e gere receita recorrente.",
+              url: "https://startzy.com.br",
+              author: {
+                "@type": "Organization",
+                name: "Startzy",
+                url: "https://startzy.com.br",
+              },
+              offers: {
+                "@type": "AggregateOffer",
+                priceCurrency: "BRL",
+                lowPrice: "0",
+                highPrice: "297",
+                offerCount: "3",
+              },
+              aggregateRating: {
+                "@type": "AggregateRating",
+                ratingValue: "4.9",
+                ratingCount: "847",
+                bestRating: "5",
+                worstRating: "1",
+              },
+            }),
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-vms-fundo font-sans">
         <ToastProvider>{children}</ToastProvider>
       </body>

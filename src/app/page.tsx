@@ -855,9 +855,59 @@ function CinematicSectionDivider() {
   );
 }
 
+function SplashScreen() {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setVisible(false), 2200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <motion.div
+      className="ab-splash"
+      initial={{ opacity: 1 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5, ease: "easeInOut" }}
+    >
+      <div className="ab-splash-inner">
+        <motion.div
+          className="ab-splash-logo"
+          initial={{ scale: 0.6, opacity: 0, filter: "blur(20px)" }}
+          animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <Image src="/logo-animacao.svg" alt="Startzy" width={280} height={130} priority />
+        </motion.div>
+        <motion.div
+          className="ab-splash-line"
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: 0.6, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        />
+      </div>
+    </motion.div>
+  );
+}
+
 export default function LandingPage() {
+  const [showContent, setShowContent] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowContent(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="landing-page">
+      <AnimatePresence mode="wait">
+        {!showContent && <SplashScreen key="splash" />}
+      </AnimatePresence>
+      {showContent && (
+        <>
       <CinematicVignette />
       <Navbar />
       <HeroSection />
@@ -878,6 +928,8 @@ export default function LandingPage() {
       <CinematicSectionDivider />
       <CTASection />
       <FooterSection />
+        </>
+      )}
     </div>
   );
 }
