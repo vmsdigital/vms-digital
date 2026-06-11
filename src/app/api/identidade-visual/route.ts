@@ -194,6 +194,109 @@ async function detectFromWebsite(url: string): Promise<Partial<BrandIdentity> | 
   }
 }
 
+async function fetchCssColors(url: string): Promise<string[]> {
+  try {
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(10000),
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+    });
+    if (!res.ok) return [];
+    const html = await res.text();
+
+    const cssUrls: string[] = [];
+    const linkRegex = /<link[^>]+href=["']([^"']+\.css[^"']*)["'][^>]*>/gi;
+    let match;
+    while ((match = linkRegex.exec(html)) !== null) {
+      try {
+        cssUrls.push(new URL(match[1], url).href);
+      } catch { /* skip invalid */ }
+    }
+
+    const colorSet = new Set<string>();
+    for (const cssUrl of cssUrls.slice(0, 5)) {
+      try {
+        const cssRes = await fetch(cssUrl, {
+          signal: AbortSignal.timeout(8000),
+          headers: { "User-Agent": "Mozilla/5.0" },
+        });
+        if (!cssRes.ok) continue;
+        const cssText = await cssRes.text();
+        const colorRegex = /#[0-9a-fA-F]{3,8}/g;
+        let cMatch;
+        while ((cMatch = colorRegex.exec(cssText)) !== null) {
+          const color = cMatch[0].toUpperCase();
+          if (color.length === 4) {
+            colorSet.add(`#${color[1]}${color[1]}${color[2]}${color[2]}${color[3]}${color[3]}`);
+          } else if (color.length === 7) {
+            colorSet.add(color);
+          }
+        }
+      } catch { /* skip failed CSS */ }
+    }
+    return Array.from(colorSet);
+  } catch {
+    return [];
+  }
+}
+
+async function detectFromScreenshot(
+  url: string,
+  nomeEmpresa: string
+): Promise<Partial<BrandIdentity> | null> {
+  if (!GEMINI_API_KEY) return null;
+
+  try {
+    const screenshotUrl = `https://api.microlink.io/?url=${encodeURIComponent(url)}&screenshot=true&meta=false&embed=screenshot.url`;
+    const metaRes = await fetch(screenshotUrl, { signal: AbortSignal.timeout(15000) });
+    if (!metaRes.ok) return null;
+
+    const metaData = await metaRes.json();
+    const imageUrl = metaData?.data?.screenshot?.url;
+    if (!imageUrl) return null;
+
+    const imgRes = await fetch(imageUrl, { signal: AbortSignal.timeout(15000) });
+    if (!imgRes.ok) return null;
+    const imgBuffer = await imgRes.arrayBuffer();
+    const base64 = Buffer.from(imgBuffer).toString("base64");
+    const mimeType = imgRes.headers.get("content-type") || "image/jpeg";
+
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const res = await fetch(geminiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: `Analise esta captura de tela do site/Instagram da empresa "${nomeEmpresa}". Extraia as cores da identidade visual (cores principais da marca, não cores de fundo genéricas). Retorne APENAS JSON: {"primaria":"#hex","secundaria":"#hex","acento":"#hex","fundo":"#hex","texto":"#hex"}` },
+            { inlineData: { mimeType, data: base64 } },
+          ],
+        }],
+        generationConfig: { maxOutputTokens: 200, temperature: 0.3 },
+      }),
+    });
+
+    if (!res.ok) return null;
+    const result = await res.json();
+    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+
+    const colors = JSON.parse(jsonMatch[0]);
+    return {
+      tem_identidade: true,
+      cores: {
+        primaria: colors.primaria || "#667eea",
+        secundaria: colors.secundaria || "#764ba2",
+        acento: colors.acento || "#f093fb",
+        fundo: colors.fundo || "#0a0a0a",
+        texto: colors.texto || "#ffffff",
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function generateWithGemini(
   nomeEmpresa: string,
   nicho: string,
@@ -398,11 +501,51 @@ export async function POST(request: NextRequest) {
       if (website_url) {
         detected = await detectFromWebsite(website_url);
         if (detected) fonteDeteccao = "website";
+
+        if (!detected || !detected.cores) {
+          const cssColors = await fetchCssColors(website_url);
+          if (cssColors.length > 0) {
+            const filtered = cssColors.filter((c) => {
+              if (c.length !== 7) return false;
+              const r = parseInt(c.slice(1, 3), 16);
+              const g = parseInt(c.slice(3, 5), 16);
+              const b = parseInt(c.slice(5, 7), 16);
+              const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+              return brightness > 30 && brightness < 225;
+            });
+            if (filtered.length >= 2) {
+              detected = {
+                tem_identidade: true,
+                cores: {
+                  primaria: filtered[0] || "#667eea",
+                  secundaria: filtered[1] || "#764ba2",
+                  acento: filtered[2] || filtered[0] || "#f093fb",
+                  fundo: "#0a0a0a",
+                  texto: "#ffffff",
+                },
+              };
+              fonteDeteccao = "website_css";
+            }
+          }
+        }
+
+        if (!detected || !detected.cores) {
+          detected = await detectFromScreenshot(website_url, nome_empresa);
+          if (detected) fonteDeteccao = "screenshot";
+        }
       }
 
       if (!detected && instagram_url) {
         detected = await detectFromInstagram(instagram_url);
         if (detected) fonteDeteccao = "instagram";
+
+        if (!detected || !detected.cores) {
+          detected = await detectFromScreenshot(
+            instagram_url.startsWith("http") ? instagram_url : `https://www.instagram.com/${instagram_url.replace("@", "")}/`,
+            nome_empresa
+          );
+          if (detected) fonteDeteccao = "screenshot_instagram";
+        }
       }
 
       if (detected && detected.cores) {

@@ -128,7 +128,6 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     {
       title: "Plataforma",
       items: [
-        { label: "Afiliados", href: "/afiliados", icon: TrendingUp, badge: planoInfo.afiliados ? { text: "PRO", variant: "purple" } : undefined },
         { label: "Carteira", href: "/carteira", icon: Wallet },
         { label: "Financeiro", href: "/financeiro", icon: DollarSign },
         { label: "Relatórios", href: "/relatorios", icon: BarChart3 },
@@ -145,7 +144,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     <>
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-black/60 lg:hidden"
           onClick={onClose}
         />
       )}

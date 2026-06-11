@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { podeProcurar } from "@/lib/plan-limits";
+import type { PlanoKey } from "@/lib/constants";
 
 const NICHO_TO_OSM: Record<string, string> = {
   provedor: "office|telecommunication",
@@ -266,6 +269,39 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Verificar limite de prospecção por plano
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: userData } = await supabase
+      .from("usuarios")
+      .select("plano, cargo")
+      .eq("id", user.id)
+      .single();
+
+    if (userData) {
+      const plano = userData.plano as PlanoKey;
+      const cargo = userData.cargo || "criador";
+
+      const inicioMes = new Date();
+      inicioMes.setDate(1);
+      inicioMes.setHours(0, 0, 0, 0);
+
+      const { count } = await supabase
+        .from("prospeccoes")
+        .select("*", { count: "exact", head: true })
+        .eq("criador_id", user.id)
+        .gte("criado_em", inicioMes.toISOString());
+
+      if (!podeProcurar(plano, count ?? 0, cargo)) {
+        return NextResponse.json(
+          { error: "Limite de prospecções atingido. Faça upgrade do seu plano." },
+          { status: 403 }
+        );
+      }
+    }
+  }
+
   const geo = await geocodeCity(cidade);
   if (!geo) {
     return NextResponse.json(
@@ -301,12 +337,13 @@ export async function GET(request: NextRequest) {
     await Promise.all(verifyPromises);
   }
 
+  // Filtrar apenas empresas SEM site
+  resultados = resultados.filter((r: { tem_site: boolean }) => !r.tem_site);
+
   const vistosSet = new Set(jaVistos ? jaVistos.split(",") : []);
   resultados = resultados.filter((r: { google_place_id: string }) => !vistosSet.has(r.google_place_id));
 
-  const ordenados = resultados.sort((a: { tem_site: boolean; total_avaliacoes: number | null; redes_sociais: string[] | null }, b: { tem_site: boolean; total_avaliacoes: number | null; redes_sociais: string[] | null }) => {
-    if (!a.tem_site && b.tem_site) return -1;
-    if (a.tem_site && !b.tem_site) return 1;
+  const ordenados = resultados.sort((a: { total_avaliacoes: number | null; redes_sociais: string[] | null }, b: { total_avaliacoes: number | null; redes_sociais: string[] | null }) => {
     const aTemRede = a.redes_sociais && a.redes_sociais.length > 0;
     const bTemRede = b.redes_sociais && b.redes_sociais.length > 0;
     if (aTemRede && !bTemRede) return -1;
@@ -325,8 +362,6 @@ export async function GET(request: NextRequest) {
     total,
     pagina,
     total_paginas: Math.ceil(total / porPagina),
-    sem_site: ordenados.filter((r: { tem_site: boolean }) => !r.tem_site).length,
-    com_site: ordenados.filter((r: { tem_site: boolean }) => r.tem_site).length,
     cidade_geo: { lat: geo.lat, lon: geo.lon, display_name: geo.display_name },
   });
 }

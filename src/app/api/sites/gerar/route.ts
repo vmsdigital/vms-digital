@@ -20,9 +20,24 @@ interface SiteFormData {
   instagram: string;
   facebook: string;
   whatsapp: string;
+  favicon?: string;
+  logo?: string;
+  fonte?: string;
+  x_twitter?: string;
+  youtube?: string;
+  cliente_id?: string;
 }
 
-const SYSTEM_PROMPT = `Web designer sênior especializado em landing pages de alta conversão. Crie sites VISUALMENTE IMPACTANTES e modernos.
+const SYSTEM_PROMPT = `Você é um web designer sênior especializado em landing pages de alta conversão.
+Crie sites VISUALMENTE IMPACTANTES, modernos e com impacto cinematográfico.
+
+NÍVEL VISUAL OBRIGATÓRIO:
+- Hero que para o scroll — headline poderosa, não título genérico
+- Primeira dobra converte sem precisar rolar
+- Espaço em branco como elemento de luxo
+- Menos elementos, mais impacto visual
+- Seções com contraste forte entre si — alterna fundo escuro/claro
+- Nada de layout "arroz com feijão"
 
 CÓDIGO: HTML completo autônomo. Tailwind CDN (<script src="https://cdn.tailwindcss.com"></script>). 2 Google Fonts (Sora/Space Grotesk/Outfit para títulos, Inter/DM Sans para corpo). Mobile-first. Fade-in scroll com IntersectionObserver. SEM imagens externas — SVGs inline sofisticados ou divs com gradientes. Meta tags SEO. Rodapé: "Criado por Startzy".
 
@@ -42,58 +57,57 @@ DESIGN AVANÇADO:
 - Decorativos: blobs com blur, linhas diagonais, formas geométricas abstratas
 - Contraste forte entre seções (alternar fundos com bg-primaria/5 e bg-transparent)
 - Números com contador animado (counter-up via JS)
-- Testeimonials com avatar gradient e aspas decorativas
+- Testimonials com avatar gradient e aspas decorativas
 
 8 SEÇÕES OBRIGATÓRIAS:
 1) Nav fixed backdrop-blur-xl + logo + links + CTA
-2) Hero text-5xl/7xl font-black + subtítulo + 2 CTAs + SVG abstrato decorativo (geometric shapes, waves, circles)
-3) Pain points (3 problemas com ícones SVG) → Solução com 3 diferenciais
-4) Serviços grid 3 cards com SVGs inline sofisticados + hover effects
-5) Números de impacto text-5xl com contador animado (clientes, projetos, anos)
-6) 3 depoimentos com avatar gradient + estrelas + aspas decorativas
+2) Hero text-5xl/7xl font-black + subtítulo + 2 CTAs + SVG abstrato animado
+3) Pain points (3 problemas reais do nicho) → Solução com 3 diferenciais
+4) Serviços grid 3 cards com SVGs inline + hover effects
+5) Números de impacto com contador animado JavaScript
+6) 3 depoimentos com avatar gradient + estrelas + nome e cidade reais
 7) FAQ 5-6 accordion details/summary com animação
-8) CTA final gradiente impactante + footer completo + WhatsApp flutuante
+8) CTA final gradiente + footer completo + botão WhatsApp flutuante fixo
 
-GOOGLE MAPS: Se houver endereço, inclua uma seção "Localização" ANTES do CTA final com iframe do Google Maps embed: <iframe src="https://maps.google.com/maps?q=ENDEREÇO_URL_ENCODED&t=&z=15&ie=UTF8&iwloc=&output=embed" width="100%" height="300" style="border:0;border-radius:16px" allowfullscreen loading="lazy"></iframe>
+GOOGLE MAPS: Se houver endereço, incluir seção "Como nos encontrar" com mapa embed: <iframe src="https://maps.google.com/maps?q=ENDEREÇO_URL_ENCODED&t=&z=15&ie=UTF8&iwloc=&output=embed" width="100%" height="300" style="border:0;border-radius:16px" allowfullscreen loading="lazy"></iframe>
 
-COPY: ESPECÍFICA do nicho, não genérica. Linguagem natural, persuasiva e emocional. Headlines que geram curiosidade. CTAs com urgência. Detalhes visuais únicos por nicho.
+COPY: Específica do nicho — nunca genérica. Linguagem natural, persuasiva e emocional. Headlines que geram curiosidade e urgência. CTAs diretos com benefício claro. Depoimentos críveis com detalhes específicos.
 
-Retorne APENAS HTML completo, sem markdown.`;
+Retorne APENAS o HTML completo, sem markdown, sem explicações.`;
 
 function buildUserMessage(data: SiteFormData): string {
-  const temaBg = data.tema === "escuro" ? "#0a0a0a" : "#ffffff";
-  const temaText = data.tema === "escuro" ? "#f5f5f5" : "#1a1a1a";
-  const temaCard = data.tema === "escuro" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)";
-  const temaBorder = data.tema === "escuro" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
   const idiomaNome = data.idioma === "pt-BR" ? "português brasileiro" : data.idioma;
+  const logoInstrucao = data.logo
+    ? `Incluir logo no header e hero usando a imagem: ${data.logo}`
+    : data.tem_logo
+      ? "Incluir espaço para logo no header e hero"
+      : "Usar nome da empresa como texto estilizado no header e hero";
 
-  return `Crie um site PROFISSIONAL e MODERNO para a empresa "${data.nome_empresa}".
+  const fonteInstrucao = data.fonte
+    ? `Fonte principal: ${data.fonte} (carregar do Google Fonts)`
+    : "";
 
-DADOS DA EMPRESA:
-- Nome: ${data.nome_empresa}
-- Descrição: ${data.descricao}
-- Objetivo: ${data.objetivo}
-- Nicho: ${data.nicho}
-- Idioma: ${idiomaNome}
-- Endereço: ${data.endereco || "Não informado"}
-- WhatsApp: ${data.whatsapp || "Não informado"}
-- Instagram: ${data.instagram || "Não informado"}
-- Facebook: ${data.facebook || "Não informado"}
-
-CORES E TEMA:
-- Cor primária: ${data.cor_primaria}
-- Cor secundária: ${data.cor_secundaria}
-- Tema: ${data.tema}
-- Fundo: ${temaBg}
-- Texto: ${temaText}
-- Card: ${temaCard}
-- Borda: ${temaBorder}
+  return `Empresa: ${data.nome_empresa}
+Segmento: ${data.nicho}
+Descrição: ${data.descricao}
+Objetivo: ${data.objetivo}
+Idioma: ${idiomaNome}
+Cor primária: ${data.cor_primaria}
+Cor secundária: ${data.cor_secundaria}
+Tema: ${data.tema}
+Logo: ${logoInstrucao}
+${data.favicon ? `Favicon: ${data.favicon}` : ""}
+${fonteInstrucao}
+Endereço: ${data.endereco || "Não informado"}
+WhatsApp: ${data.whatsapp || "Não informado"}
+Instagram: ${data.instagram || "Não informado"}
+Facebook: ${data.facebook || "Não informado"}
+${data.x_twitter ? `X/Twitter: @${data.x_twitter.replace("@", "")}` : ""}
+${data.youtube ? `YouTube: ${data.youtube}` : ""}
 
 Configure Tailwind: <script>tailwind.config={theme:{extend:{colors:{primaria:'${data.cor_primaria}',secundaria:'${data.cor_secundaria}'}}}}</script>
 
-${data.whatsapp ? `WHATSAPP: Use https://wa.me/55${data.whatsapp.replace(/\D/g, "")} em todos os CTAs de WhatsApp` : ""}
-
-A copy e os pain points devem ser ESPECÍFICOS para o nicho "${data.nicho}".`;
+${data.whatsapp ? `WHATSAPP: Use https://wa.me/55${data.whatsapp.replace(/\D/g, "")} em todos os CTAs de WhatsApp` : ""}`;
 }
 
 async function generateWithGemini(data: SiteFormData): Promise<string> {
