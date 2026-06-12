@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 const SYSTEM_PROMPT = `Você é o Startzy ("Start"), assistente oficial da plataforma Startzy de criação de sites com IA.
 
@@ -78,34 +78,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "messages é obrigatório" }, { status: 400 });
     }
 
-    if (!GEMINI_API_KEY) {
+    if (!GROQ_API_KEY) {
       return NextResponse.json({ error: "Serviço de IA não configurado" }, { status: 500 });
     }
 
-    const contents = messages.map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    }));
+    const formattedMessages = [
+      { role: "system" as const, content: SYSTEM_PROMPT },
+      ...messages.map((m: ChatMessage) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      })),
+    ];
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-    const res = await fetch(url, {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${GROQ_API_KEY}`,
+      },
       body: JSON.stringify({
-        contents,
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
+        model: "llama-3.3-70b-versatile",
+        messages: formattedMessages,
+        max_tokens: 2048,
+        temperature: 0.7,
       }),
     });
 
     if (!res.ok) {
       const errText = await res.text();
-      console.error("Gemini API error:", res.status, errText);
+      console.error("Groq API error:", res.status, errText);
       return NextResponse.json({ response: "Desculpe, estou com dificuldades técnicas. Tente novamente em instantes ou entre em contato pelo WhatsApp (11 99751-3044)." });
     }
 
     const result = await res.json();
-    const response = result.candidates?.[0]?.content?.parts?.[0]?.text || "Desculpe, não consegui processar sua mensagem.";
+    const response = result.choices?.[0]?.message?.content || "Desculpe, não consegui processar sua mensagem.";
 
     return NextResponse.json({ response });
   } catch (err) {
