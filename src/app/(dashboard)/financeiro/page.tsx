@@ -474,7 +474,7 @@ export default function FinanceiroPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-vms-primaria text-sm font-semibold">
+                    <td className="px-4 py-3 text-emerald-400 text-sm font-semibold">
                       {formatCurrency(cliente.valor_mensal)}
                     </td>
                     <td className="px-4 py-3 text-vms-texto-2 text-xs whitespace-nowrap">
@@ -596,7 +596,7 @@ export default function FinanceiroPage() {
                   </div>
                   <div>
                     <div className="text-vms-muted text-[10px] uppercase tracking-wider">Valor</div>
-                    <div className="text-vms-primaria text-xs font-medium">
+                    <div className="text-emerald-400 text-xs font-medium">
                       {formatCurrency(cliente.valor_mensal)}
                     </div>
                   </div>
@@ -953,7 +953,7 @@ export default function FinanceiroPage() {
                   </div>
                   <div className="p-3 rounded-[10px] bg-vms-card">
                     <div className="text-vms-muted text-[10px] uppercase tracking-wider mb-1">Valor</div>
-                    <div className="text-vms-primaria text-sm font-semibold">
+                    <div className="text-emerald-400 text-sm font-semibold">
                       {formatCurrency(viewingCliente.valor_mensal)}
                     </div>
                   </div>

@@ -363,10 +363,6 @@ export default function EditarSitePage() {
       if (dj.site_url) {
         setSiteUrl(dj.site_url as string);
       }
-
-      if (dj.versoes && Array.isArray(dj.versoes)) {
-        setVersions(dj.versoes as SiteVersion[]);
-      }
     }
 
     setLoading(false);
@@ -540,20 +536,20 @@ export default function EditarSitePage() {
 
       const existingData = (currentData?.dados_json as Record<string, unknown>) || {};
 
-      // Criar snapshot da versão anterior (se existir html_gerado diferente do atual)
-      const versoesAnteriores = (existingData.versoes as SiteVersion[]) || [];
+      // Criar snapshot da versão anterior em memória (não salva no banco)
       const htmlAnterior = existingData.html_gerado as string | undefined;
-      const novasVersoes = htmlAnterior && htmlAnterior !== htmlToSave
-        ? [
-            {
-              id: `v_${Date.now()}`,
-              timestamp: new Date().toISOString(),
-              label: `Versão ${versoesAnteriores.length + 1}`,
-              html: htmlAnterior,
-            },
-            ...versoesAnteriores,
-          ].slice(0, 20) // Manter no máximo 20 versões
-        : versoesAnteriores;
+      if (htmlAnterior && htmlAnterior !== htmlToSave) {
+        const novasVersoes = [
+          {
+            id: `v_${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            label: `Versão ${versions.length + 1}`,
+            html: htmlAnterior,
+          },
+          ...versions,
+        ].slice(0, 20);
+        setVersions(novasVersoes);
+      }
 
       const dadosJson = {
         ...existingData,
@@ -562,7 +558,8 @@ export default function EditarSitePage() {
         colors: { primary: primaryColor, secondary: secondaryColor, theme: themeMode },
         content: { companyName, description: companyDescription, whatsapp: whatsappNumber, address, favicon: faviconUrl, logo: logoUrl, instagram: instagramHandle, facebook: facebookUrl, twitter: twitterHandle, youtube: youtubeUrl },
         font: selectedFont,
-        versoes: novasVersoes,
+        custom_css: customCss || null,
+        site_url: siteUrl || null,
       };
 
       const { error } = await supabase
@@ -574,7 +571,6 @@ export default function EditarSitePage() {
         showToast("Erro ao salvar: " + error.message, "info");
       } else {
         pushUndo(htmlToSave);
-        setVersions(novasVersoes);
         setHtmlBackup(htmlGerado);
         setSections(parseSectionsFromHtml(htmlGerado));
         setEditingInline(false);
@@ -1061,55 +1057,29 @@ Regras:
   async function handleRestoreVersion(version: SiteVersion) {
     setRestoringVersion(true);
     try {
-      // Salvar versão atual antes de restaurar
+      // Salvar versão atual em memória antes de restaurar
       const currentHtml = editingInline && iframeRef.current?.contentDocument
         ? iframeRef.current.contentDocument.documentElement.outerHTML
         : htmlGerado;
 
-      const supabase = createClient();
-      const { data: currentData } = await supabase
-        .from("sites")
-        .select("dados_json")
-        .eq("id", id)
-        .single();
-
-      const existingData = (currentData?.dados_json as Record<string, unknown>) || {};
-      const versoesAtuais = (existingData.versoes as SiteVersion[]) || [];
-
-      // Adicionar versão atual ao histórico antes de restaurar
-      const versoesAtualizadas = currentHtml
-        ? [
-            {
-              id: `v_${Date.now()}`,
-              timestamp: new Date().toISOString(),
-              label: `Antes de restaurar ${version.label}`,
-              html: currentHtml,
-            },
-            ...versoesAtuais.filter((v) => v.id !== version.id),
-          ].slice(0, 20)
-        : versoesAtuais.filter((v) => v.id !== version.id);
-
-      const dadosJson = {
-        ...existingData,
-        html_gerado: version.html,
-        versoes: versoesAtualizadas,
-      };
-
-      const { error } = await supabase
-        .from("sites")
-        .update({ dados_json: dadosJson })
-        .eq("id", id);
-
-      if (error) {
-        showToast("Erro ao restaurar versão", "info");
-      } else {
-        setHtmlGerado(version.html);
-        setHtmlBackup(version.html);
-        setSections(parseSectionsFromHtml(version.html));
+      if (currentHtml) {
+        const versoesAtualizadas = [
+          {
+            id: `v_${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            label: `Antes de restaurar ${version.label}`,
+            html: currentHtml,
+          },
+          ...versions.filter((v) => v.id !== version.id),
+        ].slice(0, 20);
         setVersions(versoesAtualizadas);
-        setEditingInline(false);
-        showToast(`${version.label} restaurada com sucesso!`, "success");
       }
+
+      setHtmlGerado(version.html);
+      setHtmlBackup(version.html);
+      setSections(parseSectionsFromHtml(version.html));
+      setEditingInline(false);
+      showToast(`${version.label} restaurada com sucesso!`, "success");
     } catch {
       showToast("Erro ao restaurar versão", "info");
     }
@@ -1117,26 +1087,10 @@ Regras:
   }
 
   // ─── Deletar versão ───
-  async function handleDeleteVersion(versionId: string) {
-    try {
-      const supabase = createClient();
-      const { data: currentData } = await supabase
-        .from("sites")
-        .select("dados_json")
-        .eq("id", id)
-        .single();
-
-      const existingData = (currentData?.dados_json as Record<string, unknown>) || {};
-      const versoesAtuais = (existingData.versoes as SiteVersion[]) || [];
-      const versoesAtualizadas = versoesAtuais.filter((v) => v.id !== versionId);
-
-      const dadosJson = { ...existingData, versoes: versoesAtualizadas };
-      await supabase.from("sites").update({ dados_json: dadosJson }).eq("id", id);
-      setVersions(versoesAtualizadas);
-      showToast("Versão removida", "success");
-    } catch {
-      showToast("Erro ao remover versão", "info");
-    }
+  function handleDeleteVersion(versionId: string) {
+    const versoesAtualizadas = versions.filter((v) => v.id !== versionId);
+    setVersions(versoesAtualizadas);
+    showToast("Versão removida", "success");
   }
 
   // ─── Loading ───

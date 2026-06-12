@@ -332,7 +332,7 @@ async function gerarSiteClaude(
       "anthropic-beta": "prompt-caching-2024-07-31",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 8192,
       system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: userMessage }],

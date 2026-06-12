@@ -84,9 +84,9 @@ export function MetricCard({ icon, label, value, sub, green, blue, yellow }: Met
       </div>
       <div
         className={`text-[22px] font-semibold mt-[6px] tracking-[-0.3px] ${
-          green ? "text-vms-primaria text-glow" :
+          green ? "text-emerald-400" :
           blue ? "text-blue-400" :
-          yellow ? "text-yellow-400" :
+          yellow ? "text-amber-400" :
           "text-vms-texto"
         }`}
       >

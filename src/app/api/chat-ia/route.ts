@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const ANTHROPIC_URL = "https://api.anthabase.com/v1/messages";
+const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
 const SYSTEM_PROMPT = `Você é o Startzy ("Start"), assistente oficial da plataforma Startzy de criação de sites com IA.
 
@@ -113,7 +113,7 @@ async function chatWithClaude(messages: ChatMessage[]): Promise<string> {
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 2048,
       system: SYSTEM_PROMPT,
       messages: formattedMessages,
