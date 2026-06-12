@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
 const SYSTEM_PROMPT = `Você é o Startzy ("Start"), assistente oficial da plataforma Startzy de criação de sites com IA.
 
@@ -16,7 +14,7 @@ const SYSTEM_PROMPT = `Você é o Startzy ("Start"), assistente oficial da plata
 
 ## SOBRE A STARTZY
 Plataforma SaaS brasileira para criar sites com IA. Público: agências, freelancers e vendedores de sites.
-Funcionalidades: Geração de sites com Claude Sonnet 4, Editor visual inline, Prospecção via Google Maps, Propostas comerciais, Publicação com domínio personalizado, Gateway Asaas (split 95/5), Agente IA Piloto Automático, Curso incluso.
+Funcionalidades: Geração de sites com Claude Sonnet 4.6, Editor visual inline, Prospecção via Google Maps, Propostas comerciais, Publicação com domínio personalizado, Gateway Asaas (split 95/5), Agente IA Piloto Automático, Curso incluso.
 
 ## PLANOS
 - Grátis (R$0): 1 site, 3 buscas prospecção/mês, SEM publicação, suporte email
@@ -33,7 +31,7 @@ Funcionalidades: Geração de sites com Claude Sonnet 4, Editor visual inline, P
 Restaurante, Bar, Salão, Clínica, Dentista, Advocacia, Imobiliária, Pet Shop, Academia, Barbearia, Padaria, Farmácia, Escola, Contabilidade, Mecânico, Loja de Roupas, Hotel, Auto Peças, etc.
 
 ## RECURSOS DETALHADOS
-- Geração: Claude Sonnet 4 gera HTML completo com Tailwind, 8 seções (Nav, Hero, Pain Points, Serviços, Números, Depoimentos, FAQ, CTA+Footer), WhatsApp flutuante, Maps se tiver endereço
+- Geração: Claude Sonnet 4.6 gera HTML completo com Tailwind, 8 seções (Nav, Hero, Pain Points, Serviços, Números, Depoimentos, FAQ, CTA+Footer), WhatsApp flutuante, Maps se tiver endereço
 - Editor: Edição inline, seções navegáveis, preview responsivo (desktop/tablet/mobile), chat IA integrado, cores/fontes/SEO configuráveis
 - Prospecção: Google Maps + OpenStreetMap fallback, retorna empresas SEM site, limites por plano
 - Publicação: Starter+ pode publicar, subdomínio .startzy.com.br, domínio personalizado via CNAME
@@ -57,8 +55,7 @@ Restaurante, Bar, Salão, Clínica, Dentista, Advocacia, Imobiliária, Pet Shop,
 - Gateway próprio com split 95/5
 - Prospecção integrada Google Maps
 - Curso incluso nos planos pagos
-- Sites com Claude Sonnet 4
-- Exportar HTML a qualquer momento
+- Sites com Claude Sonnet 4.6
 - Hospedagem + SSL + CDN incluso
 
 ## FAQ RÁPIDO
@@ -73,58 +70,6 @@ interface ChatMessage {
   content: string;
 }
 
-async function chatWithGemini(messages: ChatMessage[]): Promise<string> {
-  if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY não configurada");
-
-  const contents = messages.map((m) => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.content }],
-  }));
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents,
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-      generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
-    }),
-  });
-
-  if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
-  const result = await res.json();
-  return result.candidates?.[0]?.content?.parts?.[0]?.text || "Desculpe, não consegui processar sua mensagem.";
-}
-
-async function chatWithClaude(messages: ChatMessage[]): Promise<string> {
-  if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY não configurada");
-
-  const formattedMessages = messages.map((m) => ({
-    role: m.role,
-    content: m.content,
-  }));
-
-  const res = await fetch(ANTHROPIC_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 2048,
-      system: SYSTEM_PROMPT,
-      messages: formattedMessages,
-    }),
-  });
-
-  if (!res.ok) throw new Error(`Anthropic API error: ${res.status}`);
-  const result = await res.json();
-  return result.content?.[0]?.text || "Desculpe, não consegui processar sua mensagem.";
-}
-
 export async function POST(request: NextRequest) {
   try {
     const { messages } = await request.json();
@@ -133,19 +78,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "messages é obrigatório" }, { status: 400 });
     }
 
-    let response: string | null = null;
-
-    try {
-      response = await chatWithGemini(messages);
-    } catch (err) {
-      console.error("Erro com Gemini, tentando Claude:", err);
-      try {
-        response = await chatWithClaude(messages);
-      } catch (err2) {
-        console.error("Erro com Claude:", err2);
-        response = "Desculpe, estou com dificuldades técnicas no momento. Por favor, tente novamente em alguns instantes ou entre em contato pelo WhatsApp (11 99751-3044).";
-      }
+    if (!GEMINI_API_KEY) {
+      return NextResponse.json({ error: "Serviço de IA não configurado" }, { status: 500 });
     }
+
+    const contents = messages.map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents,
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("Gemini API error:", res.status, errText);
+      return NextResponse.json({ response: "Desculpe, estou com dificuldades técnicas. Tente novamente em instantes ou entre em contato pelo WhatsApp (11 99751-3044)." });
+    }
+
+    const result = await res.json();
+    const response = result.candidates?.[0]?.content?.parts?.[0]?.text || "Desculpe, não consegui processar sua mensagem.";
 
     return NextResponse.json({ response });
   } catch (err) {

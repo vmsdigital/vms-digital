@@ -365,6 +365,19 @@ export default function EditarSitePage() {
       }
     }
 
+    // Carregar versões da tabela site_versoes
+    try {
+      const { data: versoesData } = await supabase
+        .from("site_versoes")
+        .select("id, timestamp, label, html")
+        .eq("site_id", id)
+        .order("timestamp", { ascending: false })
+        .limit(20);
+      if (versoesData && versoesData.length > 0) {
+        setVersions(versoesData as SiteVersion[]);
+      }
+    } catch {}
+
     setLoading(false);
   }, [id, showToast]);
 
@@ -536,19 +549,22 @@ export default function EditarSitePage() {
 
       const existingData = (currentData?.dados_json as Record<string, unknown>) || {};
 
-      // Criar snapshot da versão anterior em memória (não salva no banco)
+      // Salvar versão anterior na tabela site_versoes
       const htmlAnterior = existingData.html_gerado as string | undefined;
       if (htmlAnterior && htmlAnterior !== htmlToSave) {
-        const novasVersoes = [
-          {
-            id: `v_${Date.now()}`,
-            timestamp: new Date().toISOString(),
-            label: `Versão ${versions.length + 1}`,
-            html: htmlAnterior,
-          },
-          ...versions,
-        ].slice(0, 20);
-        setVersions(novasVersoes);
+        const versaoLabel = `Versão ${versions.length + 1}`;
+        const versaoId = crypto.randomUUID();
+        await supabase.from("site_versoes").insert({
+          id: versaoId,
+          site_id: id,
+          label: versaoLabel,
+          html: htmlAnterior,
+        });
+        // Atualizar state local
+        setVersions((prev) => [
+          { id: versaoId, timestamp: new Date().toISOString(), label: versaoLabel, html: htmlAnterior },
+          ...prev,
+        ].slice(0, 20));
       }
 
       const dadosJson = {
@@ -1057,22 +1073,25 @@ Regras:
   async function handleRestoreVersion(version: SiteVersion) {
     setRestoringVersion(true);
     try {
-      // Salvar versão atual em memória antes de restaurar
+      // Salvar versão atual no banco antes de restaurar
       const currentHtml = editingInline && iframeRef.current?.contentDocument
         ? iframeRef.current.contentDocument.documentElement.outerHTML
         : htmlGerado;
 
       if (currentHtml) {
-        const versoesAtualizadas = [
-          {
-            id: `v_${Date.now()}`,
-            timestamp: new Date().toISOString(),
-            label: `Antes de restaurar ${version.label}`,
-            html: currentHtml,
-          },
-          ...versions.filter((v) => v.id !== version.id),
-        ].slice(0, 20);
-        setVersions(versoesAtualizadas);
+        const versaoLabel = `Antes de restaurar ${version.label}`;
+        const versaoId = crypto.randomUUID();
+        const supabase = createClient();
+        await supabase.from("site_versoes").insert({
+          id: versaoId,
+          site_id: id,
+          label: versaoLabel,
+          html: currentHtml,
+        });
+        setVersions((prev) => [
+          { id: versaoId, timestamp: new Date().toISOString(), label: versaoLabel, html: currentHtml },
+          ...prev.filter((v) => v.id !== version.id),
+        ].slice(0, 20));
       }
 
       setHtmlGerado(version.html);
@@ -1087,10 +1106,15 @@ Regras:
   }
 
   // ─── Deletar versão ───
-  function handleDeleteVersion(versionId: string) {
-    const versoesAtualizadas = versions.filter((v) => v.id !== versionId);
-    setVersions(versoesAtualizadas);
-    showToast("Versão removida", "success");
+  async function handleDeleteVersion(versionId: string) {
+    try {
+      const supabase = createClient();
+      await supabase.from("site_versoes").delete().eq("id", versionId);
+      setVersions((prev) => prev.filter((v) => v.id !== versionId));
+      showToast("Versão removida", "success");
+    } catch {
+      showToast("Erro ao remover versão", "info");
+    }
   }
 
   // ─── Loading ───
