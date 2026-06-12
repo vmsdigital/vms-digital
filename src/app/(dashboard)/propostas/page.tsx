@@ -24,7 +24,7 @@ import {
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
+
 import { LoadingIA } from "@/components/ui/LoadingIA";
 import { SitePreview } from "@/components/ui/SitePreview";
 import { createClient } from "@/lib/supabase/client";
@@ -406,16 +406,16 @@ export default function PropostasPage() {
 
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
               <div className="flex-1">
+                <label className="block text-sm font-medium text-vms-muted mb-1.5">Segmento</label>
                 <Input
-                  label="Segmento"
                   placeholder="Ex: Advogado"
                   value={scriptSegmento}
                   onChange={(e) => setScriptSegmento(e.target.value)}
                 />
               </div>
               <div className="flex-1">
+                <label className="block text-sm font-medium text-vms-muted mb-1.5">Cidade</label>
                 <Input
-                  label="Cidade"
                   placeholder="Ex: São Paulo"
                   value={scriptCidade}
                   onChange={(e) => setScriptCidade(e.target.value)}
@@ -763,9 +763,24 @@ export default function PropostasPage() {
             </div>
 
             <form onSubmit={handleCriarProposta} className="flex flex-col gap-4">
-              <Input label="Nome do prospect" placeholder="Ex: João Silva" value={formNome} onChange={(e) => setFormNome(e.target.value)} required />
-              <Input label="WhatsApp" placeholder="(11) 99999-9999" icon={<Phone size={14} />} value={formWhatsapp} onChange={(e) => setFormWhatsapp(e.target.value)} />
-              <Input label="Valor proposto (R$)" type="number" min={0} step={0.01} placeholder="197.00" icon={<DollarSign size={14} />} value={formValor} onChange={(e) => setFormValor(e.target.value)} />
+              <div>
+                <label className="block text-sm font-medium text-vms-muted mb-1.5">Nome do prospect</label>
+                <Input placeholder="Ex: João Silva" value={formNome} onChange={(e) => setFormNome(e.target.value)} required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-vms-muted mb-1.5">WhatsApp</label>
+                <div className="relative">
+                  <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-vms-muted" />
+                  <Input placeholder="(11) 99999-9999" value={formWhatsapp} onChange={(e) => setFormWhatsapp(e.target.value)} className="pl-9" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-vms-muted mb-1.5">Valor proposto (R$)</label>
+                <div className="relative">
+                  <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-vms-muted" />
+                  <Input type="number" min={0} step={0.01} placeholder="197.00" value={formValor} onChange={(e) => setFormValor(e.target.value)} className="pl-9" />
+                </div>
+              </div>
 
               <div>
                 <label className="text-vms-texto-2 text-xs font-medium mb-1.5 block">Vincular cliente</label>
@@ -792,7 +807,14 @@ export default function PropostasPage() {
                 />
               </div>
 
-              <Select label="Status" options={statusOptions} value={formStatus} onChange={(e) => setFormStatus(e.target.value as StatusProposta)} />
+              <div>
+                <label className="block text-sm font-medium text-vms-muted mb-1.5">Status</label>
+                <select value={formStatus} onChange={(e) => setFormStatus(e.target.value as StatusProposta)} className="w-full h-9 rounded-[8px] border border-vms-borda bg-vms-card px-3 text-sm text-vms-texto focus:outline-none focus:ring-1 focus:ring-vms-primaria">
+                  {statusOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
 
               <div className="flex gap-3 mt-2">
                 <Button variant="secondary" type="button" onClick={() => setShowModal(false)} className="flex-1">

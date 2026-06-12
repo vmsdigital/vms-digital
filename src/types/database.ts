@@ -3,7 +3,7 @@ export interface Usuario {
   nome: string;
   email: string;
   whatsapp: string | null;
-  plano: "gratuito" | "starter" | "pro" | "agency" | "admin";
+  plano: "gratuito" | "starter" | "pro" | "admin";
   afiliado_id: string | null;
   cargo: "admin" | "criador";
   asaas_customer_id: string | null;

@@ -6,20 +6,19 @@ export default function FloatingParticles() {
   useEffect(() => {
     const container = document.createElement("div")
     container.setAttribute("aria-hidden", "true")
-    const particles: HTMLDivElement[] = []
-    const count = 18
+    const count = 6
 
     for (let i = 0; i < count; i++) {
       const particle = document.createElement("div")
 
-      const size = Math.random() * 3 + 2
-      const opacity = Math.random() * 0.25 + 0.15
-      const dx = Math.random() * 60 - 30
-      const dy = Math.random() * 80 - 40
-      const duration = Math.random() * 12 + 8
-      const delay = Math.random() * 10
-      const top = Math.random() * 100
-      const left = Math.random() * 100
+      const size = 2 + (i % 3)
+      const opacity = 0.15 + (i % 3) * 0.05
+      const dx = -20 + (i * 13) % 60
+      const dy = -30 + (i * 17) % 80
+      const duration = 10 + (i % 4) * 3
+      const delay = (i * 2.5) % 10
+      const top = (i * 17) % 100
+      const left = (i * 23) % 100
 
       particle.style.position = "fixed"
       particle.style.pointerEvents = "none"
@@ -33,9 +32,9 @@ export default function FloatingParticles() {
       particle.style.setProperty("--dy", `${dy}px`)
       particle.style.animation = `float-particle ${duration}s ${delay}s infinite ease-in-out`
       particle.style.zIndex = "0"
+      particle.style.willChange = "transform, opacity"
 
       container.appendChild(particle)
-      particles.push(particle)
     }
 
     document.body.appendChild(container)

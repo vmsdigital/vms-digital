@@ -2,12 +2,10 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback, lazy, Suspense } from "react";
 import {
   motion,
   useInView,
-  useScroll,
-  useTransform,
   AnimatePresence,
 } from "framer-motion";
 import {
@@ -24,13 +22,28 @@ import {
   DollarSign,
   Crosshair,
   Globe,
-  MessageSquare,
   Shield,
   Star,
   X,
   LayoutDashboard,
   ChevronLeft,
   ChevronRight,
+  Cpu,
+  Sparkles,
+  Palette,
+  Users,
+  TrendingUp,
+  TrendingDown,
+  PiggyBank,
+  PhoneCall,
+  Wrench,
+  Edit3,
+  Clock,
+  Heart,
+  Server,
+  Infinity as InfinityIcon,
+  DollarSignIcon,
+  Database,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -65,11 +78,11 @@ function Navbar() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user } }: { data: { user: { id: string } | null } }) => {
       if (user) setIsLoggedIn(true);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: { user: { id: string } | null } | null) => {
       setIsLoggedIn(!!session?.user);
     });
 
@@ -121,8 +134,8 @@ function HeroSection() {
   const [wordIndex, setWordIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const words = ["agências.", "freelancers.", "empreendedores.", "vendedores."];
-  const particleCount = isMobile ? 8 : 20;
+  const words = useMemo(() => ["agências.", "freelancers.", "empreendedores.", "vendedores."], []);
+  const particleCount = isMobile ? 4 : 8;
 
   useEffect(() => {
     setMounted(true);
@@ -151,19 +164,19 @@ function HeroSection() {
               key={i}
               className="ab-hero-particle"
               initial={{
-                x: `${Math.random() * 100}%`,
-                y: `${Math.random() * 100}%`,
+                x: `${10 + (i * 12) % 100}%`,
+                y: `${10 + (i * 17) % 100}%`,
                 opacity: 0,
-                scale: Math.random() * 0.5 + 0.3,
+                scale: 0.3 + (i % 3) * 0.2,
               }}
               animate={{
-                y: [`${Math.random() * 100}%`, `${Math.random() * 60}%`],
-                opacity: [0, Math.random() * 0.4 + 0.1, 0],
+                y: [`${10 + (i * 17) % 100}%`, `${10 + (i * 7) % 60}%`],
+                opacity: [0, 0.15 + (i % 3) * 0.1, 0],
               }}
               transition={{
-                duration: Math.random() * 6 + 4,
+                duration: 5 + (i % 3) * 2,
                 repeat: Infinity,
-                delay: Math.random() * 4,
+                delay: (i % 4) * 1.5,
                 ease: "easeInOut",
               }}
             />
@@ -379,14 +392,239 @@ function FeaturesSection() {
   );
 }
 
+function AIPoweredSection() {
+  const aiTools = [
+    { name: "ChatBot", color: "#10B981" },
+    { name: "SEO AI", color: "#3B82F6" },
+    { name: "Copy AI", color: "#F59E0B" },
+    { name: "Design AI", color: "#EC4899" },
+    { name: "Analytics", color: "#8B5CF6" },
+    { name: "Voice AI", color: "#06B6D4" },
+  ];
+
+  return (
+    <section className="ab-section" id="ia">
+      <div className="ab-container">
+        <FadeIn>
+          <div className="ab-section-header ab-section-header-center">
+            <span className="ab-label"><Cpu size={14} style={{ display: "inline", verticalAlign: "-2px", marginRight: "6px" }} /> Inteligência Artificial</span>
+            <h2 className="ab-title ab-title-center">IA em cada etapa do seu negócio.</h2>
+          </div>
+        </FadeIn>
+        <FadeIn>
+          <div className="ai-orbit-container">
+            <div className="ai-orbit-ring-border ai-orbit-ring-border-inner" />
+            <div className="ai-orbit-ring-border ai-orbit-ring-border-outer" />
+            <div className="ai-orbit-center">
+              <Bot size={32} />
+              <span>Startzy AI</span>
+            </div>
+            {aiTools.map((tool, i) => (
+              <div
+                key={tool.name}
+                className="ai-orbit-item-wrapper"
+                style={{ animationDelay: `${-(i * 5)}s` } as React.CSSProperties}
+              >
+                <div className="ai-orbit-item-icon" style={{ background: `${tool.color}18`, border: `1.5px solid ${tool.color}40` }}>
+                  <Bot size={20} style={{ color: tool.color }} />
+                </div>
+                <span className="ai-orbit-item-name">{tool.name}</span>
+              </div>
+            ))}
+            {aiTools.map((tool, i) => (
+              <div
+                key={`outer-${tool.name}`}
+                className="ai-orbit-particle-wrapper"
+                style={{ animationDelay: `${-(i * 6.67)}s` } as React.CSSProperties}
+              >
+                <div className="ai-orbit-particle-dot" style={{ background: tool.color }} />
+              </div>
+            ))}
+          </div>
+        </FadeIn>
+      </div>
+    </section>
+  );
+}
+
+function PlatformsSection() {
+  const platforms = [
+    { name: "Framer Motion", icon: <Sparkles size={20} />, color: "#0055FF" },
+    { name: "21st.dev", icon: <Globe size={20} />, color: "#8B5CF6" },
+    { name: "UI UX Pro", icon: <Palette size={20} />, color: "#F59E0B" },
+    { name: "Next.js", icon: <Server size={20} />, color: "#ffffff" },
+    { name: "Tailwind", icon: <Paintbrush size={20} />, color: "#06B6D4" },
+    { name: "Supabase", icon: <Database size={20} />, color: "#3ECF8E" },
+  ];
+
+  return (
+    <section className="ab-section ab-section-alt" id="plataformas">
+      <div className="ab-container">
+        <FadeIn>
+          <div className="ab-section-header ab-section-header-center">
+            <span className="ab-label"><Globe size={14} style={{ display: "inline", verticalAlign: "-2px", marginRight: "6px" }} /> Plataformas & Integrações</span>
+            <h2 className="ab-title ab-title-center">Tecnologias que impulsionam seu negócio.</h2>
+          </div>
+        </FadeIn>
+        <FadeIn>
+          <div className="platforms-orbit-container">
+            <div className="platforms-orbit-ring" />
+            <div className="platforms-orbit-center">
+              <Image src="/logo-startzy.svg" alt="Startzy" width={60} height={18} />
+            </div>
+            {platforms.map((p, i) => (
+              <div
+                key={p.name}
+                className="platforms-orbit-item"
+                style={{ animationDelay: `${-(i * 5)}s` } as React.CSSProperties}
+              >
+                <div className="platforms-orbit-icon" style={{ background: `${p.color}15`, border: `1.5px solid ${p.color}35` }}>
+                  {p.icon}
+                </div>
+                <span className="platforms-orbit-name">{p.name}</span>
+              </div>
+            ))}
+          </div>
+        </FadeIn>
+      </div>
+    </section>
+  );
+}
+
+function ComparisonSection() {
+  const badItems = [
+    { icon: <Clock size={18} />, label: "Mais tempo trabalhando" },
+    { icon: <TrendingDown size={18} />, label: "Menos eficiência" },
+    { icon: <DollarSignIcon size={18} />, label: "Menos lucro" },
+    { icon: <PiggyBank size={18} />, label: "Custo alto" },
+    { icon: <PhoneCall size={18} />, label: "Prospecção manual" },
+    { icon: <Wrench size={18} />, label: "Manutenção por conta própria" },
+    { icon: <Edit3 size={18} />, label: "Edição limitada" },
+    { icon: <Palette size={18} />, label: "Design genérico" },
+  ];
+
+  const goodItems = [
+    { icon: <TrendingUp size={18} />, label: "Mais eficiência" },
+    { icon: <DollarSignIcon size={18} />, label: "Mais lucro" },
+    { icon: <Sparkles size={18} />, label: "Design único" },
+    { icon: <PiggyBank size={18} />, label: "Custo baixo" },
+    { icon: <Shield size={18} />, label: "Manutenção com nossa equipe" },
+    { icon: <InfinityIcon size={18} />, label: "Edição fácil e ilimitada" },
+    { icon: <Heart size={18} />, label: "Mais tempo de lazer com família" },
+    { icon: <Zap size={18} />, label: "Prospecção automática" },
+  ];
+
+  return (
+    <section className="ab-section" id="comparacao">
+      <div className="ab-container">
+        <FadeIn>
+          <div className="ab-section-header ab-section-header-center">
+            <span className="ab-label">Comparação</span>
+            <h2 className="ab-title ab-title-center">Sem Startzy vs Com Startzy</h2>
+          </div>
+        </FadeIn>
+        <div className="ab-comparison-grid">
+          <FadeIn delay={0.1}>
+            <div className="ab-comparison-col ab-comparison-bad">
+              <div className="ab-comparison-header">
+                <X size={20} />
+                <span>Sem Startzy</span>
+              </div>
+              {badItems.map((item, i) => (
+                <div key={i} className="ab-comparison-row">
+                  {item.icon}
+                  <span>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </FadeIn>
+          <FadeIn delay={0.2}>
+            <div className="ab-comparison-vs">
+              <span>VS</span>
+            </div>
+          </FadeIn>
+          <FadeIn delay={0.3}>
+            <div className="ab-comparison-col ab-comparison-good">
+              <div className="ab-comparison-header">
+                <Check size={20} />
+                <span>Com Startzy</span>
+              </div>
+              {goodItems.map((item, i) => (
+                <div key={i} className="ab-comparison-row">
+                  {item.icon}
+                  <span>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </FadeIn>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function PricingSection() {
-  const plans = [
+  const [anual, setAnual] = useState(false);
+
+  const plans = anual ? [
     {
       name: "Grátis",
       price: "R$0",
       period: "/mês",
       desc: "Para começar a testar",
-      features: ["2 sites com IA", "Prospecção básica", "Templates simples", "Suporte por email"],
+      features: ["1 site gerado com IA", "Edição com IA", "Preview do site", "3 buscas de prospecção", "SEM publicação", "Suporte por email"],
+      cta: "Começar grátis",
+      primary: false,
+    },
+    {
+      name: "Starter",
+      price: "R$77",
+      period: "/mês",
+      desc: "Para quem quer faturar",
+      features: [
+        "80 sites por mês",
+        "Edições ilimitadas com IA",
+        "15 buscas de prospecção",
+        "Publicação de sites",
+        "Domínio personalizado",
+        "Checkout personalizado",
+        "Curso básico Startzy incluso",
+        "Suporte prioritário",
+        "Economia de R$240/ano",
+      ],
+      cta: "Assinar Starter",
+      primary: true,
+      popular: true,
+      anualLabel: "R$924/ano",
+    },
+    {
+      name: "Pro",
+      price: "R$157",
+      period: "/mês",
+      desc: "Para escalar como agência",
+      features: [
+        "150 sites por mês",
+        "Edições ilimitadas com IA",
+        "Prospecção ilimitada",
+        "Agente IA — Piloto Automático",
+        "Publicação de sites",
+        "Domínio personalizado",
+        "Checkout personalizado",
+        "Curso completo Startzy incluso",
+        "Suporte 24h",
+        "Economia de R$480/ano",
+      ],
+      cta: "Assinar Pro",
+      primary: false,
+      anualLabel: "R$1.884/ano",
+    },
+  ] : [
+    {
+      name: "Grátis",
+      price: "R$0",
+      period: "/mês",
+      desc: "Para começar a testar",
+      features: ["1 site gerado com IA", "Edição com IA", "Preview do site", "3 buscas de prospecção", "SEM publicação", "Suporte por email"],
       cta: "Começar grátis",
       primary: false,
     },
@@ -396,11 +634,13 @@ function PricingSection() {
       period: "/mês",
       desc: "Para quem quer faturar",
       features: [
-        "10 sites com IA",
-        "Prospecção completa",
-        "Templates premium",
-        "Editor avançado",
-        "SEO automático",
+        "80 sites por mês",
+        "Edições ilimitadas com IA",
+        "15 buscas de prospecção",
+        "Publicação de sites",
+        "Domínio personalizado",
+        "Checkout personalizado",
+        "Curso básico Startzy incluso",
         "Suporte prioritário",
       ],
       cta: "Assinar Starter",
@@ -413,12 +653,14 @@ function PricingSection() {
       period: "/mês",
       desc: "Para escalar como agência",
       features: [
-        "50 sites com IA",
+        "150 sites por mês",
+        "Edições ilimitadas com IA",
         "Prospecção ilimitada",
-        "Templates premium",
-        "Editor avançado",
+        "Agente IA — Piloto Automático",
+        "Publicação de sites",
         "Domínio personalizado",
-        "IA Editorial exclusiva",
+        "Checkout personalizado",
+        "Curso completo Startzy incluso",
         "Suporte 24h",
       ],
       cta: "Assinar Pro",
@@ -435,9 +677,27 @@ function PricingSection() {
             <h2 className="ab-title">Comece grátis. Escale quando quiser.</h2>
           </div>
         </FadeIn>
+
+        {/* Toggle Mensal/Anual */}
+        <FadeIn>
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <span className={`text-sm font-medium ${!anual ? "text-white" : "text-[#86B8C8]"}`}>Mensal</span>
+            <button
+              onClick={() => setAnual(!anual)}
+              className={`relative w-14 h-7 rounded-full transition-colors ${anual ? "bg-[#00E0B8]" : "bg-[#041F2B] border border-[#86B8C8]/30"}`}
+            >
+              <div className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${anual ? "translate-x-8" : "translate-x-1"}`} />
+            </button>
+            <span className={`text-sm font-medium ${anual ? "text-white" : "text-[#86B8C8]"}`}>
+              Anual
+              <span className="ml-2 text-xs bg-[#00E0B8]/20 text-[#00E0B8] px-2 py-0.5 rounded-full font-semibold">-20%</span>
+            </span>
+          </div>
+        </FadeIn>
+
         <div className="ab-pricing-grid">
           {plans.map((plan, i) => (
-            <FadeIn key={plan.name} delay={0.08 * (i + 1)}>
+            <FadeIn key={plan.name + (anual ? "-anual" : "-mensal")} delay={0.08 * (i + 1)}>
               <div className={`ab-price${plan.popular ? " ab-price-popular" : ""}`}>
                 {plan.popular && <span className="ab-price-badge">Popular</span>}
                 <div className="ab-price-name">{plan.name}</div>
@@ -445,6 +705,11 @@ function PricingSection() {
                   {plan.price}
                   <span>{plan.period}</span>
                 </div>
+                {anual && (plan as { anualLabel?: string }).anualLabel && (
+                  <div className="text-xs text-[#00E0B8] mt-1">
+                    Cobrado {(plan as { anualLabel?: string }).anualLabel}
+                  </div>
+                )}
                 <div className="ab-price-desc">{plan.desc}</div>
                 <div className="ab-price-divider" />
                 <ul className="ab-price-features">
@@ -465,6 +730,27 @@ function PricingSection() {
             </FadeIn>
           ))}
         </div>
+
+        {/* Diferenciais */}
+        <FadeIn>
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { icon: <Bot size={20} />, title: "Agente IA Piloto Automático", desc: "Prospecta e cria sites enquanto você dorme" },
+              { icon: <DollarSign size={20} />, title: "Gateway próprio", desc: "Checkout personalizado incluso no plano" },
+              { icon: <Shield size={20} />, title: "Split automático", desc: "Receba direto na sua conta — 95% pra você" },
+              { icon: <Radar size={20} />, title: "Prospecção integrada", desc: "Google Maps integrado para encontrar clientes" },
+              { icon: <BarChart3 size={20} />, title: "Curso incluso", desc: "Aprenda a vender e escalar com a Startzy" },
+            ].map((diff) => (
+              <div key={diff.title} className="flex items-start gap-3 p-4 rounded-xl bg-white/5 border border-white/10">
+                <div className="text-[#00E0B8]">{diff.icon}</div>
+                <div>
+                  <p className="text-sm font-semibold text-white">{diff.title}</p>
+                  <p className="text-xs text-[#86B8C8] mt-0.5">{diff.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </FadeIn>
       </div>
     </section>
   );
@@ -803,55 +1089,11 @@ function FooterSection() {
   );
 }
 
-function CinematicVignette() {
-  const [isMobile, setIsMobile] = useState(false);
-  const { scrollYProgress } = useScroll();
-  const vignetteOpacity = useTransform(scrollYProgress, [0, 0.05, 0.15, 0.85, 0.95, 1], [0, 0.3, 0, 0, 0.3, 0.6]);
-
-  useEffect(() => {
-    setIsMobile(window.innerWidth < 768);
-  }, []);
-
-  if (isMobile) return null;
-
-  return (
-    <motion.div
-      className="ab-cinematic-vignette"
-      style={{ opacity: vignetteOpacity }}
-    />
-  );
-}
-
 function CinematicSectionDivider() {
-  const [isMobile, setIsMobile] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "center center", "end start"],
-  });
-  const blur = useTransform(scrollYProgress, [0, 0.5, 1], [8, 0, 8]);
-  const opacity = useTransform(scrollYProgress, [0, 0.5, 1], [0.3, 1, 0.3]);
-
-  useEffect(() => {
-    setIsMobile(window.innerWidth < 768);
-  }, []);
-
-  if (isMobile) {
-    return (
-      <div className="ab-cinematic-divider-static">
-        <div className="ab-cinematic-divider-line" />
-      </div>
-    );
-  }
-
   return (
-    <motion.div
-      ref={ref}
-      className="ab-cinematic-divider"
-      style={{ filter: blur, opacity }}
-    >
+    <div className="ab-cinematic-divider-static">
       <div className="ab-cinematic-divider-line" />
-    </motion.div>
+    </div>
   );
 }
 
@@ -859,84 +1101,20 @@ function SplashScreen() {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setVisible(false), 2200);
+    const timer = setTimeout(() => setVisible(false), 1800);
     return () => clearTimeout(timer);
   }, []);
 
   if (!visible) return null;
 
   return (
-    <motion.div
-      className="ab-splash"
-      initial={{ opacity: 1 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5, ease: "easeInOut" }}
-    >
-      <div className="ab-splash-lights">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <motion.div
-            key={i}
-            className="ab-splash-light"
-            style={{
-              top: `${15 + Math.random() * 70}%`,
-              left: `${10 + Math.random() * 80}%`,
-            }}
-            initial={{
-              scale: 0,
-              opacity: 0,
-              x: 0,
-              y: 0,
-            }}
-            animate={{
-              scale: [0, 1, 2, 0],
-              opacity: [0, 0.8, 0.4, 0],
-              x: [
-                0,
-                (Math.random() - 0.5) * 200,
-                (Math.random() - 0.5) * 300,
-                (Math.random() - 0.5) * 400,
-              ],
-              y: [
-                0,
-                (Math.random() - 0.5) * 200,
-                (Math.random() - 0.5) * 300,
-                (Math.random() - 0.5) * 400,
-              ],
-            }}
-            transition={{
-              duration: 2 + Math.random(),
-              delay: i * 0.25,
-              repeat: Infinity,
-              ease: "easeOut",
-            }}
-          />
-        ))}
-      </div>
+    <div className="ab-splash">
       <div className="ab-splash-inner">
-        <motion.div
-          className="ab-splash-logo"
-          initial={{ scale: 0.4, opacity: 0, filter: "blur(20px)" }}
-          animate={{
-            scale: [0.4, 1.05, 1],
-            opacity: [0, 1, 1],
-            filter: ["blur(20px)", "blur(0px)", "blur(0px)"],
-          }}
-          transition={{
-            duration: 1,
-            ease: [0.16, 1, 0.3, 1],
-          }}
-        >
+        <div className="ab-splash-logo animate-fade-in-up">
           <Image src="/logo-animacao.svg" alt="Startzy" width={100} height={47} priority />
-        </motion.div>
-        <motion.div
-          className="ab-splash-line"
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ duration: 0.6, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
-        />
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -1006,24 +1184,27 @@ export default function LandingPage() {
   const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowContent(true), 2000);
+    const timer = setTimeout(() => setShowContent(true), 1600);
     return () => clearTimeout(timer);
   }, []);
 
   return (
     <div className="landing-page">
-      <AnimatePresence mode="wait">
-        {!showContent && <SplashScreen key="splash" />}
-      </AnimatePresence>
+      {!showContent && <SplashScreen />}
       {showContent && (
         <>
-      <CinematicVignette />
       <Navbar />
       <HeroSection />
       <CinematicSectionDivider />
       <HowSection />
       <CinematicSectionDivider />
       <FeaturesSection />
+      <CinematicSectionDivider />
+      <AIPoweredSection />
+      <CinematicSectionDivider />
+      <PlatformsSection />
+      <CinematicSectionDivider />
+      <ComparisonSection />
       <CinematicSectionDivider />
       <PricingSection />
       <CinematicSectionDivider />

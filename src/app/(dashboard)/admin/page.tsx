@@ -244,7 +244,7 @@ export default function AdminPage() {
                   Planos dos Usuários
                 </h3>
                 <div className="space-y-2">
-                  {["gratuito", "starter", "pro", "agency"].map((plano) => {
+                  {["gratuito", "starter", "pro"].map((plano) => {
                     const count = usuarios.filter((u) => u.plano === plano).length;
                     const pct = usuarios.length > 0 ? (count / usuarios.length) * 100 : 0;
                     return (

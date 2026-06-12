@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 const ASAAS_API_URL =
   process.env.ASAAS_API_URL || "https://api.asaas.com/v3";
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY || "";
+const STARTZY_SPLIT_WALLET_ID = process.env.STARTZY_SPLIT_WALLET_ID || "";
+const STARTZY_SPLIT_PERCENT = 5;
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,6 +31,15 @@ export async function POST(request: NextRequest) {
         cycle: ciclo || "MONTHLY",
         description: descricao || "Assinatura Startzy",
         notificationDisabled: false,
+        ...(STARTZY_SPLIT_WALLET_ID ? {
+          split: [
+            {
+              walletId: STARTZY_SPLIT_WALLET_ID,
+              fixedValue: null,
+              percentualValue: STARTZY_SPLIT_PERCENT,
+            },
+          ],
+        } : {}),
       }),
     });
 

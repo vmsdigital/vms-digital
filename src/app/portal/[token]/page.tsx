@@ -142,7 +142,7 @@ export default function PortalClientePage() {
 
   return (
     <div className="min-h-screen bg-vms-fundo">
-      <header className="sticky top-0 z-50 border-b border-vms-borda bg-vms-fundo/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-vms-borda bg-vms-fundo">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div

@@ -27,7 +27,7 @@ import { MetricCard } from "@/components/ui/MetricCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
+
 import { LoadingIA } from "@/components/ui/LoadingIA";
 import { createClient } from "@/lib/supabase/client";
 import { STATUS_CLIENTE, PRECOS_SITE } from "@/lib/constants";
@@ -350,19 +350,26 @@ export default function ClientesPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <div className="w-[240px]">
-              <Input
-                placeholder="Buscar cliente..."
-                icon={<Search size={14} />}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-vms-muted" />
+                <Input
+                  placeholder="Buscar cliente..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </div>
             <div className="w-[160px]">
-              <Select
-                options={STATUS_FILTER_OPTIONS}
+              <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-              />
+                className="w-full h-9 rounded-[8px] border border-vms-borda bg-vms-card px-3 text-sm text-vms-texto focus:outline-none focus:ring-1 focus:ring-vms-primaria"
+              >
+                {STATUS_FILTER_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -617,65 +624,100 @@ export default function ClientesPage() {
             </div>
 
             <form onSubmit={handleCriarCliente} className="flex flex-col gap-4">
-              <Input
-                label="Nome"
-                placeholder="Nome completo"
-                value={formNome}
-                onChange={(e) => setFormNome(e.target.value)}
-                required
-              />
-              <Input
-                label="E-mail"
-                type="email"
-                placeholder="email@exemplo.com"
-                icon={<MailIcon size={14} />}
-                value={formEmail}
-                onChange={(e) => setFormEmail(e.target.value)}
-              />
-              <Input
-                label="WhatsApp"
-                placeholder="(11) 99999-9999"
-                icon={<Phone size={14} />}
-                value={formWhatsapp}
-                onChange={(e) => setFormWhatsapp(e.target.value)}
-                required
-              />
-              <Select
-                label="Site"
-                options={[{ value: "", label: "Selecione um site" }, ...siteOptions]}
-                value={formSiteId}
-                onChange={(e) => setFormSiteId(e.target.value)}
-              />
-              <Select
-                label="Plano"
-                options={PLANO_OPTIONS}
-                value={formPlanoTipo}
-                onChange={(e) => setFormPlanoTipo(e.target.value as PlanoTipo)}
-              />
-              <Input
-                label="Valor mensal (R$)"
-                type="number"
-                min={0}
-                step={0.01}
-                icon={<DollarSign size={14} />}
-                value={formValor}
-                onChange={(e) => setFormValor(e.target.value)}
-              />
-              <Select
-                label="Status"
-                options={Object.entries(STATUS_CLIENTE).map(([key, val]) => ({
-                  value: key,
-                  label: val.label,
-                }))}
-                value={formStatus}
-                onChange={(e) => setFormStatus(e.target.value as StatusCliente)}
-              />
-              <Input
-                label="Vencimento"
-                type="date"
-                value={formVencimento}
-                onChange={(e) => setFormVencimento(e.target.value)}
-              />
+              <div>
+                <label className="block text-sm font-medium text-vms-muted mb-1.5">Nome</label>
+                <Input
+                  placeholder="Nome completo"
+                  value={formNome}
+                  onChange={(e) => setFormNome(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-vms-muted mb-1.5">E-mail</label>
+                <div className="relative">
+                  <MailIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-vms-muted" />
+                  <Input
+                    type="email"
+                    placeholder="email@exemplo.com"
+                    value={formEmail}
+                    onChange={(e) => setFormEmail(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-vms-muted mb-1.5">WhatsApp</label>
+                <div className="relative">
+                  <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-vms-muted" />
+                  <Input
+                    placeholder="(11) 99999-9999"
+                    value={formWhatsapp}
+                    onChange={(e) => setFormWhatsapp(e.target.value)}
+                    required
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-vms-muted mb-1.5">Site</label>
+                <select
+                  value={formSiteId}
+                  onChange={(e) => setFormSiteId(e.target.value)}
+                  className="w-full h-9 rounded-[8px] border border-vms-borda bg-vms-card px-3 text-sm text-vms-texto focus:outline-none focus:ring-1 focus:ring-vms-primaria"
+                >
+                  <option value="">Selecione um site</option>
+                  {siteOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-vms-muted mb-1.5">Plano</label>
+                <select
+                  value={formPlanoTipo}
+                  onChange={(e) => setFormPlanoTipo(e.target.value as PlanoTipo)}
+                  className="w-full h-9 rounded-[8px] border border-vms-borda bg-vms-card px-3 text-sm text-vms-texto focus:outline-none focus:ring-1 focus:ring-vms-primaria"
+                >
+                  {PLANO_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-vms-muted mb-1.5">Valor mensal (R$)</label>
+                <div className="relative">
+                  <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-vms-muted" />
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={formValor}
+                    onChange={(e) => setFormValor(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-vms-muted mb-1.5">Status</label>
+                <select
+                  value={formStatus}
+                  onChange={(e) => setFormStatus(e.target.value as StatusCliente)}
+                  className="w-full h-9 rounded-[8px] border border-vms-borda bg-vms-card px-3 text-sm text-vms-texto focus:outline-none focus:ring-1 focus:ring-vms-primaria"
+                >
+                  {Object.entries(STATUS_CLIENTE).map(([key, val]) => (
+                    <option key={key} value={key}>{val.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-vms-muted mb-1.5">Vencimento</label>
+                <Input
+                  type="date"
+                  value={formVencimento}
+                  onChange={(e) => setFormVencimento(e.target.value)}
+                />
+              </div>
 
               <div className="flex gap-3 mt-2">
                 <Button
@@ -731,7 +773,7 @@ export default function ClientesPage() {
                   Cancelar
                 </Button>
                 <Button
-                  variant="danger"
+                  variant="destructive"
                   onClick={() => handleDelete(deleteConfirm)}
                   className="flex-1"
                 >

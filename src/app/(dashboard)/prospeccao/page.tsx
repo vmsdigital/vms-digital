@@ -27,10 +27,11 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { LoadingIA } from "@/components/ui/LoadingIA";
 import { createClient } from "@/lib/supabase/client";
-import { podeProcurar } from "@/lib/plan-limits";
+import { podeProcurar, getProspeccoesRestantes } from "@/lib/plan-limits";
 import type { ProspeccaoResultado } from "@/types/database";
 import type { PlanoKey } from "@/lib/constants";
 import type { Site } from "@/types/database";
+import { UpgradeModal } from "@/components/ui/UpgradeModal";
 
 export default function ProspeccaoPage() {
   const router = useRouter();
@@ -43,17 +44,16 @@ export default function ProspeccaoPage() {
   const [buscando, setBuscando] = useState(false);
   const [jaBuscou, setJaBuscou] = useState(false);
   const [semCreditos, setSemCreditos] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [alertaRestantes, setAlertaRestantes] = useState(false);
   const [plano, setPlano] = useState<PlanoKey>("gratuito");
   const [cargo, setCargo] = useState<string>("criador");
   const [prospeccoesMes, setProspeccoesMes] = useState(0);
   const [demoModal, setDemoModal] = useState<ProspeccaoResultado | null>(null);
   const [erro, setErro] = useState("");
-  const [filtroTipo, setFiltroTipo] = useState<"todos" | "sem_site" | "com_site">("todos");
   const [pagina, setPagina] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalResultados, setTotalResultados] = useState(0);
-  const [semSiteCount, setSemSiteCount] = useState(0);
-  const [comSiteCount, setComSiteCount] = useState(0);
   const [sites, setSites] = useState<Site[]>([]);
   const [prospeccoesSalvas, setProspeccoesSalvas] = useState<{
     id: string;
@@ -104,6 +104,7 @@ export default function ProspeccaoPage() {
     e.preventDefault();
     if (!podeProcurar(plano, prospeccoesMes, cargo)) {
       setSemCreditos(true);
+      setShowUpgradeModal(true);
       return;
     }
     setSemCreditos(false);
@@ -138,8 +139,6 @@ export default function ProspeccaoPage() {
       setResultados(data.resultados || []);
       setTotalResultados(data.total || 0);
       setTotalPaginas(data.total_paginas || 1);
-      setSemSiteCount(data.sem_site || 0);
-      setComSiteCount(data.com_site || 0);
       setBuscando(false);
       setJaBuscou(true);
 
@@ -153,7 +152,15 @@ export default function ProspeccaoPage() {
           raio_km: raioKm,
           resultados: data.resultados || [],
         });
-        setProspeccoesMes((prev) => prev + 1);
+        setProspeccoesMes((prev) => {
+          const novoTotal = prev + 1;
+          // Alerta quando restar 3 buscas no Starter
+          const restantes = getProspeccoesRestantes(plano, novoTotal, cargo);
+          if (restantes !== Infinity && restantes <= 3 && restantes > 0) {
+            setAlertaRestantes(true);
+          }
+          return novoTotal;
+        });
 
         const prospeccoesRes = await supabase
           .from("prospeccoes")
@@ -227,11 +234,7 @@ export default function ProspeccaoPage() {
     }) ?? null;
   }
 
-  const filteredResultados = resultados.filter((r) => {
-    if (filtroTipo === "sem_site") return !r.tem_site;
-    if (filtroTipo === "com_site") return r.tem_site;
-    return true;
-  });
+  const filteredResultados = resultados;
 
   function getGoogleMapsUrl(empresa: ProspeccaoResultado) {
     if (empresa.lat && empresa.lon) {
@@ -245,9 +248,17 @@ export default function ProspeccaoPage() {
       <div className="flex flex-col gap-5">
         {semCreditos && (
           <AlertaBanner
-            message="Sem créditos de prospecção este mês. Faça upgrade do seu plano."
+            message="Limite de prospecções atingido. Faça upgrade para continuar prospectando."
             actionLabel="Ver planos"
-            onAction={() => {}}
+            onAction={() => setShowUpgradeModal(true)}
+          />
+        )}
+
+        {alertaRestantes && !semCreditos && (
+          <AlertaBanner
+            message={`Atenção: restam apenas ${getProspeccoesRestantes(plano, prospeccoesMes, cargo)} buscas este mês. Considere fazer upgrade.`}
+            actionLabel="Ver planos"
+            onAction={() => setShowUpgradeModal(true)}
           />
         )}
 
@@ -296,17 +307,20 @@ export default function ProspeccaoPage() {
               </select>
             </div>
             <div className="flex-1 min-w-[180px]">
-              <Input
-                label="Cidade"
-                placeholder="Ex: São Paulo"
-                icon={<MapPin size={14} />}
-                value={cidade}
-                onChange={(e) => setCidade(e.target.value)}
-              />
+              <label className="block text-sm font-medium text-vms-muted mb-1.5">Cidade</label>
+              <div className="relative">
+                <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-vms-muted" />
+                <Input
+                  placeholder="Ex: São Paulo"
+                  value={cidade}
+                  onChange={(e) => setCidade(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </div>
             <div className="w-[120px]">
+              <label className="block text-sm font-medium text-vms-muted mb-1.5">Raio (km)</label>
               <Input
-                label="Raio (km)"
                 type="number"
                 min={1}
                 max={100}
@@ -355,8 +369,6 @@ export default function ProspeccaoPage() {
                       setSegmento(p.segmento);
                       setCidade(p.cidade);
                       setTotalResultados(p.resultados?.length || 0);
-                      setSemSiteCount((p.resultados || []).filter((r) => !r.tem_site).length);
-                      setComSiteCount((p.resultados || []).filter((r) => r.tem_site).length);
                       setJaBuscou(true);
                       setMostrarSalvas(false);
                       setPagina(1);
@@ -387,8 +399,6 @@ export default function ProspeccaoPage() {
                       setSegmento(p.segmento);
                       setCidade(p.cidade);
                       setTotalResultados(p.resultados?.length || 0);
-                      setSemSiteCount((p.resultados || []).filter((r) => !r.tem_site).length);
-                      setComSiteCount((p.resultados || []).filter((r) => r.tem_site).length);
                       setJaBuscou(true);
                       setPagina(1);
                       setTotalPaginas(1);
@@ -415,49 +425,10 @@ export default function ProspeccaoPage() {
 
         {jaBuscou && !buscando && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <MetricCard
-                icon={<Building2 size={14} />}
-                label="Total encontradas"
-                value={totalResultados}
-              />
-              <MetricCard
-                icon={<Sparkles size={14} />}
-                label="Sem site"
-                value={semSiteCount}
-                green
-              />
-              <MetricCard
-                icon={<Globe size={14} />}
-                label="Com site"
-                value={comSiteCount}
-              />
-            </div>
-
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-3">
                 <span className="text-vms-texto text-sm font-medium">Resultados</span>
-                <span className="text-vms-muted text-xs">{filteredResultados.length} empresas na página {pagina}</span>
-              </div>
-              <div className="flex items-center gap-1 glass rounded-[8px] p-0.5">
-                <button
-                  onClick={() => setFiltroTipo("todos")}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${filtroTipo === "todos" ? "bg-vms-primaria/20 text-vms-primaria" : "text-vms-muted hover:text-vms-texto"}`}
-                >
-                  Todos
-                </button>
-                <button
-                  onClick={() => setFiltroTipo("sem_site")}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${filtroTipo === "sem_site" ? "bg-vms-primaria/20 text-vms-primaria" : "text-vms-muted hover:text-vms-texto"}`}
-                >
-                  Sem site
-                </button>
-                <button
-                  onClick={() => setFiltroTipo("com_site")}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${filtroTipo === "com_site" ? "bg-vms-primaria/20 text-vms-primaria" : "text-vms-muted hover:text-vms-texto"}`}
-                >
-                  Com site
-                </button>
+                <span className="text-vms-muted text-xs">{filteredResultados.length} empresas sem site — página {pagina}</span>
               </div>
             </div>
 
@@ -676,6 +647,13 @@ export default function ProspeccaoPage() {
           </div>
         )}
         <ProspecaoSpyAnimation isSearching={buscando} />
+        <UpgradeModal
+          open={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          titulo="Limite de prospecções atingido"
+          texto="Você usou todas as suas buscas do mês. Faça upgrade para continuar prospectando."
+          feature="prospeccao"
+        />
       </div>
     </DashboardLayout>
   );

@@ -208,7 +208,7 @@ export default function ClienteLayout({ children }: ClienteLayoutProps) {
       </aside>
 
       <div className="flex flex-1 flex-col overflow-hidden relative z-10">
-        <header className="flex h-[54px] shrink-0 items-center border-b border-vms-borda bg-vms-sidebar/80 backdrop-blur-md px-4">
+        <header className="flex h-[54px] shrink-0 items-center border-b border-vms-borda bg-vms-sidebar px-4">
           <button
             onClick={() => setSidebarOpen(true)}
             className="mr-3 text-vms-muted hover:text-vms-texto lg:hidden"

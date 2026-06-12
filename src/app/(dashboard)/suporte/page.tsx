@@ -26,27 +26,27 @@ const FAQ_ITEMS = [
   {
     pergunta: "Como criar um site?",
     resposta:
-      "Acesse a aba 'Criar Site' no menu lateral, preencha as informações do seu negócio (nome, descrição, objetivo), escolha as cores e tema, e clique em 'Gerar Site com IA'. Em segundos seu site estará pronto!",
+      "Acesse 'Criar Site' no menu lateral, preencha as informações do negócio (nome, descrição, objetivo, cores, redes sociais), escolha a fonte e tema, e clique em 'Gerar Site com IA'. Em segundos seu site estará pronto para editar e personalizar!",
   },
   {
     pergunta: "Posso editar o site depois de criado?",
     resposta:
-      "Sim! Acesse 'Meus Sites', clique no site desejado e depois em 'Editar'. Você pode alterar textos, cores, imagens e muito mais. Também pode usar o assistente IA para fazer edições por comando de voz ou texto.",
+      "Sim! Acesse 'Meus Sites', clique no site e depois em 'Editar'. Você pode editar textos diretamente no site (clique no texto e digite), usar a barra de seções para navegar, ajustar cores/fontes/SEO na barra direita, ou pedir para a IA fazer alterações pelo chat StartEngine AI.",
   },
   {
     pergunta: "Como conectar um domínio personalizado?",
     resposta:
-      "No editor do site, vá na seção 'Domínio' e insira seu domínio. Você precisará configurar um registro CNAME no seu provedor de DNS apontando para cname.startzy.com.br. O sistema verifica automaticamente.",
+      "Disponível a partir do plano Starter. No editor do site, vá na seção 'Domínio' e insira seu domínio. Você precisará configurar um registro CNAME no seu provedor de DNS apontando para cname.startzy.com.br. O sistema verifica automaticamente.",
   },
   {
     pergunta: "Quais formas de pagamento são aceitas?",
     resposta:
-      "Aceitamos boleto bancário, PIX e cartão de crédito. Os pagamentos são processados de forma segura. Você pode gerenciar tudo pela aba 'Carteira' ou 'Financeiro'.",
+      "Aceitamos boleto bancário, PIX e cartão de crédito via Asaas. Os pagamentos são processados de forma segura com split automático: 95% para você, 5% para a Startzy. Gerencie tudo pela aba 'Carteira' e 'Financeiro'.",
   },
   {
     pergunta: "Como funciona o programa de afiliados?",
     resposta:
-      "Nos planos Pro e Agency, você pode se tornar afiliado e ganhar comissão indicando a plataforma. Acesse a aba 'Afiliados' para gerar seu link de indicação e acompanhar suas comissões.",
+      "No plano Pro, você pode se tornar afiliado e ganhar comissão indicando a plataforma. Acesse a aba 'Afiliados' para gerar seu link de indicação e acompanhar suas comissões.",
   },
   {
     pergunta: "Posso cancelar a qualquer momento?",
@@ -56,22 +56,42 @@ const FAQ_ITEMS = [
   {
     pergunta: "Quantos sites posso criar?",
     resposta:
-      "Depende do seu plano: Gratuito (2 sites), Starter (10 sites), Pro (50 sites) e Agency (ilimitados). Você pode fazer upgrade a qualquer momento.",
+      "Depende do seu plano: Grátis (1 site), Starter (80 sites/mês) e Pro (150 sites/mês). Você pode fazer upgrade a qualquer momento para liberar mais sites e recursos.",
   },
   {
     pergunta: "O site é otimizado para celular?",
     resposta:
-      "Sim! Todos os sites gerados são 100% responsivos e otimizados para dispositivos móveis, tablets e desktops automaticamente.",
+      "Sim! Todos os sites gerados são 100% responsivos e otimizados para dispositivos móveis, tablets e desktops automaticamente. O design é mobile-first.",
   },
   {
     pergunta: "Como prospectar empresas sem site?",
     resposta:
-      "Use a ferramenta de Prospecção no menu lateral. Selecione o nicho e a cidade, e a IA buscará empresas sem site usando o Google Places. Você pode gerar propostas automaticamente para essas empresas.",
+      "Use a ferramenta de Prospecção no menu lateral. Selecione o nicho e a cidade, e o sistema buscará empresas SEM site usando o Google Maps. Plano Grátis: 3 buscas/mês, Starter: 15 buscas/mês, Pro: ilimitado. Você pode gerar propostas automaticamente para essas empresas.",
   },
   {
     pergunta: "Como compartilhar o portal com meu cliente?",
     resposta:
       "Na página de Clientes, clique no ícone de compartilhar ao lado do cliente. Isso copiará o link do portal personalizado onde seu cliente pode ver o status do projeto, pagamentos e visualizar o site.",
+  },
+  {
+    pergunta: "Posso publicar meu site no plano Grátis?",
+    resposta:
+      "Não. A publicação está disponível a partir do plano Starter (R$ 97/mês ou R$ 77/mês no anual). No plano Grátis você pode criar, editar e visualizar o site, mas para publicar e ativar domínio personalizado é necessário fazer upgrade.",
+  },
+  {
+    pergunta: "O que é o Agente IA Piloto Automático?",
+    resposta:
+      "É um recurso exclusivo do plano Pro que prospecta e cria sites automaticamente. Você configura os critérios e o agente trabalha sozinho, encontrando empresas sem site e gerando propostas enquanto você foca em fechar vendas.",
+  },
+  {
+    pergunta: "Como funciona o SEO gerado por IA?",
+    resposta:
+      "No editor do site, na seção SEO, clique em 'Gerar SEO com IA'. O sistema usa o Gemini para criar automaticamente o título, meta description e keywords otimizados para o Google, baseado no nome e descrição da empresa. Você pode editar manualmente depois.",
+  },
+  {
+    pergunta: "Quais são os diferenciais da Startzy?",
+    resposta:
+      "Agente IA Piloto Automático que prospecta e cria sites sozinho, Gateway próprio com checkout personalizado incluso, Split automático de pagamento (95% você / 5% Startzy), Prospecção integrada com Google Maps, e Curso incluso em todos os planos pagos.",
   },
 ];
 

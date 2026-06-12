@@ -16,13 +16,12 @@ interface Notificacoes {
   pagamentos: boolean;
 }
 
-const planosOrder: PlanoKey[] = ["gratuito", "starter", "pro", "agency", "admin"];
+const planosOrder: PlanoKey[] = ["gratuito", "starter", "pro", "admin"];
 
 const planFeatures: Record<PlanoKey, string[]> = {
-  gratuito: ["2 sites", "1 prospecção/mês", "5 edições IA", "Sem afiliados"],
-  starter: ["10 sites", "20 prospecções/mês", "20 edições IA", "Sem afiliados"],
-  pro: ["50 sites", "100 prospecções/mês", "Edições IA ilimitadas", "Programa de afiliados"],
-  agency: ["Sites ilimitados", "Prospecções ilimitadas", "Edições IA ilimitadas", "Programa de afiliados"],
+  gratuito: ["1 site", "3 prospecções/mês", "Edições IA ilimitadas", "Sem publicação"],
+  starter: ["80 sites", "15 prospecções/mês", "Edições IA ilimitadas", "Publicação + domínio"],
+  pro: ["150 sites", "Prospecções ilimitadas", "Edições IA ilimitadas", "Agente IA + afiliados"],
   admin: ["Acesso total", "Prospecções ilimitadas", "Edições IA ilimitadas", "Programa de afiliados"],
 };
 

@@ -114,7 +114,7 @@ export default function AjudaPage() {
 
   return (
     <div className="min-h-screen bg-vms-fundo text-vms-texto">
-      <header className="border-b border-vms-borda bg-vms-fundo/80 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b border-vms-borda bg-vms-fundo sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link
             href="/"
@@ -315,7 +315,7 @@ export default function AjudaPage() {
       {chatOpen && (
         <div className="fixed inset-0 z-[60] flex justify-end">
           <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50"
             onClick={() => setChatOpen(false)}
           />
           <div className="relative w-full max-w-md h-full flex flex-col bg-[#121212] border-l border-vms-borda shadow-2xl animate-in slide-in-from-right duration-300">

@@ -20,7 +20,7 @@ import {
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
+
 import { SitePreview } from "@/components/ui/SitePreview";
 import { createClient } from "@/lib/supabase/client";
 import { NICHOS } from "@/lib/constants";
@@ -193,12 +193,15 @@ export default function SitesPage() {
 
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
-            <Input
-              placeholder="Buscar site..."
-              icon={<Search size={14} />}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-vms-muted" />
+              <Input
+                placeholder="Buscar site..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -224,11 +227,15 @@ export default function SitesPage() {
             </button>
           </div>
           <div className="w-full sm:w-56">
-            <Select
-              options={nichoOptions}
+            <select
               value={nichoFilter}
               onChange={(e) => setNichoFilter(e.target.value)}
-            />
+              className="w-full h-9 rounded-[8px] border border-vms-borda bg-vms-card px-3 text-sm text-vms-texto focus:outline-none focus:ring-1 focus:ring-vms-primaria"
+            >
+              {nichoOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
           </div>
         </div>
 

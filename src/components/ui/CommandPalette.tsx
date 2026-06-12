@@ -314,7 +314,7 @@ export default function CommandPalette({ isOpen: isOpenProp, onClose: onClosePro
   return (
     <div className="fixed inset-0 z-[80] flex items-start justify-center pt-[5vh] sm:pt-[15vh]">
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
+        className="absolute inset-0 bg-black/60 animate-fade-in"
         onClick={close}
       />
 

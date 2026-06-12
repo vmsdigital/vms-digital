@@ -8,9 +8,11 @@ interface MetricCardProps {
   value: string | number;
   sub?: string;
   green?: boolean;
+  blue?: boolean;
+  yellow?: boolean;
 }
 
-export function MetricCard({ icon, label, value, sub, green }: MetricCardProps) {
+export function MetricCard({ icon, label, value, sub, green, blue, yellow }: MetricCardProps) {
   const [displayValue, setDisplayValue] = useState<string>("0");
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -81,7 +83,12 @@ export function MetricCard({ icon, label, value, sub, green }: MetricCardProps) 
         <span>{label}</span>
       </div>
       <div
-        className={`text-[22px] font-semibold mt-[6px] tracking-[-0.3px] ${green ? "text-vms-primaria text-glow" : "text-vms-texto"}`}
+        className={`text-[22px] font-semibold mt-[6px] tracking-[-0.3px] ${
+          green ? "text-vms-primaria text-glow" :
+          blue ? "text-blue-400" :
+          yellow ? "text-yellow-400" :
+          "text-vms-texto"
+        }`}
       >
         {displayValue}
       </div>

@@ -50,6 +50,17 @@ const NICHOS_GRID = NICHOS.map((n) => ({
   label: n.label,
 }));
 
+const FONTES_DISPONIVEIS = [
+  { value: "Inter", label: "Inter" },
+  { value: "Poppins", label: "Poppins" },
+  { value: "Montserrat", label: "Montserrat" },
+  { value: "Roboto", label: "Roboto" },
+  { value: "Space Grotesk", label: "Space Grotesk" },
+  { value: "Sora", label: "Sora" },
+  { value: "Outfit", label: "Outfit" },
+  { value: "DM Sans", label: "DM Sans" },
+];
+
 const PROGRESS_MESSAGES = [
   "🔍 Analisando seu nicho e mercado...",
   "🎨 Gerando paleta de cores profissional...",
@@ -105,6 +116,12 @@ interface FormData {
   whatsapp: string;
   website_url: string;
   modo_identidade: "auto" | "manual" | "nenhuma";
+  favicon_url: string;
+  logo_url: string;
+  fonte_principal: string;
+  x_twitter: string;
+  youtube: string;
+  cliente_id: string | null;
 }
 
 const initialForm: FormData = {
@@ -125,6 +142,12 @@ const initialForm: FormData = {
   whatsapp: "",
   website_url: "",
   modo_identidade: "auto",
+  favicon_url: "",
+  logo_url: "",
+  fonte_principal: "Inter",
+  x_twitter: "",
+  youtube: "",
+  cliente_id: null,
 };
 
 export default function CriarSitePage() {
@@ -204,6 +227,9 @@ function CriarSiteContent() {
   const [buscandoEmpresa, setBuscandoEmpresa] = useState(false);
   const [brandIdentity, setBrandIdentity] = useState<BrandIdentity | null>(null);
   const [gerandoDescricao, setGerandoDescricao] = useState(false);
+  const [clientesList, setClientesList] = useState<Array<{ id: string; nome: string; whatsapp: string; email: string | null }>>([]);
+  const [buscandoClientes, setBuscandoClientes] = useState(false);
+  const [clienteSearchTerm, setClienteSearchTerm] = useState("");
 
   function updateForm(field: keyof FormData, value: string | boolean | File | null) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -256,6 +282,42 @@ function CriarSiteContent() {
       updateForm("descricao", `${form.nome_empresa} é uma empresa de ${nichoLabel.toLowerCase()} comprometida com excelência e qualidade no atendimento. Oferecemos soluções completas para nossos clientes, com foco em resultados e satisfação.`);
     } finally {
       setGerandoDescricao(false);
+    }
+  }
+
+  async function buscarClientes(termo: string) {
+    if (!termo.trim()) {
+      setClientesList([]);
+      return;
+    }
+    setBuscandoClientes(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("clientes")
+        .select("id, nome, whatsapp, email")
+        .eq("criador_id", user.id)
+        .ilike("nome", `%${termo}%`)
+        .order("nome", { ascending: true })
+        .limit(10);
+
+      setClientesList(data || []);
+    } catch {
+      setClientesList([]);
+    } finally {
+      setBuscandoClientes(false);
+    }
+  }
+
+  function selecionarCliente(cliente: { id: string; nome: string; whatsapp: string; email: string | null }) {
+    updateForm("cliente_id", cliente.id);
+    setClienteSearchTerm(cliente.nome);
+    setClientesList([]);
+    if (!form.whatsapp && cliente.whatsapp) {
+      updateForm("whatsapp", cliente.whatsapp);
     }
   }
 
@@ -382,7 +444,7 @@ function CriarSiteContent() {
       .eq("criador_id", user.id);
 
     const plano = (user as unknown as { plano?: string }).plano || "gratuito";
-    if (!podeCriarSite(plano as "gratuito" | "starter" | "pro" | "agency", count ?? 0)) {
+    if (!podeCriarSite(plano as "gratuito" | "starter" | "pro" | "admin", count ?? 0)) {
       setShowOverlay(false);
       setGerandoSite(false);
       return;
@@ -410,6 +472,12 @@ function CriarSiteContent() {
           instagram: form.instagram,
           facebook: form.facebook,
           whatsapp: form.whatsapp,
+          favicon: form.favicon_url || undefined,
+          logo: form.logo_url || undefined,
+          fonte: form.fonte_principal || undefined,
+          x_twitter: form.x_twitter || undefined,
+          youtube: form.youtube || undefined,
+          cliente_id: form.cliente_id || undefined,
         }),
       });
 
@@ -454,6 +522,17 @@ function CriarSiteContent() {
         modo_identidade: form.modo_identidade,
         identidade_visual: brandIdentity,
         html_gerado: htmlGerado,
+        favicon: form.favicon_url || null,
+        logo: form.logo_url || null,
+        fonte: form.fonte_principal,
+        redes_sociais: {
+          instagram: form.instagram || null,
+          facebook: form.facebook || null,
+          x_twitter: form.x_twitter || null,
+          youtube: form.youtube || null,
+          whatsapp: form.whatsapp || null,
+        },
+        cliente_id: form.cliente_id,
       },
     }).select().single();
 
@@ -461,6 +540,7 @@ function CriarSiteContent() {
       await supabase.from("propostas").insert({
         criador_id: user.id,
         site_id: siteData.id,
+        cliente_id: form.cliente_id || null,
         nome_prospect: form.nome_empresa,
         whatsapp: form.whatsapp || null,
         status: "gerado",
@@ -1018,18 +1098,101 @@ function CriarSiteContent() {
               </div>
             </div>
 
-            <div className="flex rounded-[10px] overflow-hidden border border-white/5 h-10">
-              <div
-                className="flex-1 flex items-center justify-center text-xs font-semibold"
-                style={{ backgroundColor: form.cor_primaria, color: "#000" }}
-              >
-                Primária
+            <div className="flex flex-col gap-2">
+              <label className="text-vms-texto-2 text-xs font-medium">
+                Preview da Paleta
+              </label>
+              <div className="rounded-[10px] overflow-hidden border border-white/5">
+                <div
+                  className="h-8 flex items-center justify-center text-xs font-bold"
+                  style={{
+                    background: `linear-gradient(135deg, ${form.cor_primaria} 0%, ${form.cor_secundaria} 100%)`,
+                    color: "#fff",
+                    textShadow: "0 1px 2px rgba(0,0,0,0.3)"
+                  }}
+                >
+                  Gradiente Principal
+                </div>
+                <div className="flex h-6">
+                  <div
+                    className="flex-1 flex items-center justify-center text-[10px] font-semibold"
+                    style={{ backgroundColor: form.cor_primaria, color: "#000" }}
+                  >
+                    {form.cor_primaria}
+                  </div>
+                  <div
+                    className="flex-1 flex items-center justify-center text-[10px] font-semibold text-white"
+                    style={{ backgroundColor: form.cor_secundaria }}
+                  >
+                    {form.cor_secundaria}
+                  </div>
+                </div>
+                <div className="flex h-4">
+                  <div className="flex-1" style={{ backgroundColor: form.cor_primaria + "20" }} />
+                  <div className="flex-1" style={{ backgroundColor: form.cor_secundaria + "20" }} />
+                </div>
               </div>
-              <div
-                className="flex-1 flex items-center justify-center text-xs font-semibold text-white"
-                style={{ backgroundColor: form.cor_secundaria }}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-vms-texto-2 text-xs font-medium flex items-center gap-1.5">
+                <span>🔤</span> Fonte principal (preview)
+              </label>
+              <select
+                value={form.fonte_principal}
+                onChange={(e) => updateForm("fonte_principal", e.target.value)}
+                className="w-full border bg-white/5 rounded-[10px] px-4 py-2.5 text-sm text-vms-texto
+                  outline-none transition-colors cursor-pointer
+                  border-white/5 focus:border-vms-primaria appearance-none"
+                style={{ fontFamily: form.fonte_principal }}
               >
-                Secundária
+                {FONTES_DISPONIVEIS.map((fonte) => (
+                  <option key={fonte.value} value={fonte.value} style={{ fontFamily: fonte.value }}>
+                    {fonte.label}
+                  </option>
+                ))}
+              </select>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                {FONTES_DISPONIVEIS.slice(0, 4).map((fonte) => (
+                  <button
+                    key={fonte.value}
+                    type="button"
+                    onClick={() => updateForm("fonte_principal", fonte.value)}
+                    className={`px-3 py-2 rounded-[8px] border text-center transition-all duration-200 cursor-pointer
+                      ${form.fonte_principal === fonte.value
+                        ? "border-vms-primaria/40 bg-vms-primaria/10 shadow-[0_0_12px_rgba(170,255,0,0.08)]"
+                        : "border-white/5 bg-white/[0.02] hover:border-white/10"
+                      }`}
+                    style={{ fontFamily: fonte.value }}
+                  >
+                    <span className={`text-sm ${
+                      form.fonte_principal === fonte.value ? "text-vms-primaria font-semibold" : "text-vms-texto-2"
+                    }`}>
+                      {fonte.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {FONTES_DISPONIVEIS.slice(4).map((fonte) => (
+                  <button
+                    key={fonte.value}
+                    type="button"
+                    onClick={() => updateForm("fonte_principal", fonte.value)}
+                    className={`px-3 py-2 rounded-[8px] border text-center transition-all duration-200 cursor-pointer
+                      ${form.fonte_principal === fonte.value
+                        ? "border-vms-primaria/40 bg-vms-primaria/10 shadow-[0_0_12px_rgba(170,255,0,0.08)]"
+                        : "border-white/5 bg-white/[0.02] hover:border-white/10"
+                      }`}
+                    style={{ fontFamily: fonte.value }}
+                  >
+                    <span className={`text-sm ${
+                      form.fonte_principal === fonte.value ? "text-vms-primaria font-semibold" : "text-vms-texto-2"
+                    }`}>
+                      {fonte.label}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -1150,6 +1313,66 @@ function CriarSiteContent() {
       case 6:
         return (
           <div className="flex flex-col gap-5">
+            <div className="rounded-[10px] border border-vms-blue-light/10 bg-vms-blue-bg/30 p-4">
+              <label className="text-vms-texto-2 text-xs font-medium flex items-center gap-1.5 mb-3">
+                <Building2 size={14} />
+                Vincular a cliente existente (opcional)
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Buscar cliente pelo nome..."
+                  value={clienteSearchTerm}
+                  onChange={(e) => {
+                    setClienteSearchTerm(e.target.value);
+                    if (!form.cliente_id) buscarClientes(e.target.value);
+                  }}
+                  className="w-full border bg-white/5 rounded-[10px] px-4 py-2.5 text-sm text-vms-texto
+                    placeholder:text-vms-dark-5 outline-none transition-colors
+                    border-white/5 focus:border-vms-primaria"
+                />
+                {form.cliente_id && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateForm("cliente_id", null);
+                      setClienteSearchTerm("");
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-vms-muted hover:text-vms-erro text-xs"
+                  >
+                    ✕ Limpar
+                  </button>
+                )}
+              </div>
+              {buscandoClientes && (
+                <div className="flex items-center gap-2 px-3 py-2 mt-2">
+                  <div className="w-3 h-3 border-2 border-vms-blue-light border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs text-vms-blue-light">Buscando clientes...</span>
+                </div>
+              )}
+              {!buscandoClientes && clientesList.length > 0 && (
+                <div className="mt-2 border border-white/5 rounded-[8px] bg-vms-card max-h-40 overflow-y-auto">
+                  {clientesList.map((cliente) => (
+                    <button
+                      key={cliente.id}
+                      type="button"
+                      onClick={() => selecionarCliente(cliente)}
+                      className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-white/5 transition-colors"
+                    >
+                      <span className="text-sm text-vms-texto">{cliente.nome}</span>
+                      <span className="text-xs text-vms-muted">{cliente.whatsapp}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {form.cliente_id && !buscandoClientes && clientesList.length === 0 && (
+                <div className="flex items-center gap-2 px-3 py-2 mt-2 rounded-[6px] bg-vms-primaria/5 border border-vms-primaria/20">
+                  <CheckCircle2 size={12} className="text-vms-primaria" />
+                  <span className="text-xs text-vms-primaria font-medium">Cliente vinculado: {clienteSearchTerm}</span>
+                </div>
+              )}
+            </div>
+
             <div className="flex flex-col gap-1.5">
               <label className="text-vms-texto-2 text-xs font-medium">
                 Endereço da empresa
@@ -1179,18 +1402,98 @@ function CriarSiteContent() {
               </label>
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-vms-texto-2 text-xs font-medium flex items-center gap-1.5">
+                  <MessageCircle size={14} />
+                  WhatsApp
+                </label>
+                <div className="relative">
+                  <MessageCircle size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-vms-muted" />
+                  <input
+                    type="text"
+                    placeholder="(11) 91234-5678"
+                    value={form.whatsapp}
+                    onChange={(e) => updateForm("whatsapp", e.target.value)}
+                    className="w-full border bg-white/5 rounded-[12px] pl-10 pr-4 py-3 text-sm text-vms-texto
+                      placeholder:text-vms-dark-5 outline-none transition-colors
+                      border-white/5 focus:border-vms-primaria"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-vms-texto-2 text-xs font-medium flex items-center gap-1.5">
+                  <Camera size={14} />
+                  Instagram (@)
+                </label>
+                <div className="relative">
+                  <Camera size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-vms-muted" />
+                  <input
+                    type="text"
+                    placeholder="@seunegocio"
+                    value={form.instagram}
+                    onChange={(e) => updateForm("instagram", e.target.value)}
+                    className="w-full border bg-white/5 rounded-[12px] pl-10 pr-4 py-3 text-sm text-vms-texto
+                      placeholder:text-vms-dark-5 outline-none transition-colors
+                      border-white/5 focus:border-vms-primaria"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-vms-texto-2 text-xs font-medium flex items-center gap-1.5">
+                  <Link2 size={14} />
+                  Facebook (URL)
+                </label>
+                <div className="relative">
+                  <Link2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-vms-muted" />
+                  <input
+                    type="text"
+                    placeholder="facebook.com/seunegocio"
+                    value={form.facebook}
+                    onChange={(e) => updateForm("facebook", e.target.value)}
+                    className="w-full border bg-white/5 rounded-[12px] pl-10 pr-4 py-3 text-sm text-vms-texto
+                      placeholder:text-vms-dark-5 outline-none transition-colors
+                      border-white/5 focus:border-vms-primaria"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-vms-texto-2 text-xs font-medium flex items-center gap-1.5">
+                  <Share2 size={14} />
+                  X / Twitter (@)
+                </label>
+                <div className="relative">
+                  <Share2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-vms-muted" />
+                  <input
+                    type="text"
+                    placeholder="@seunegocio"
+                    value={form.x_twitter}
+                    onChange={(e) => updateForm("x_twitter", e.target.value)}
+                    className="w-full border bg-white/5 rounded-[12px] pl-10 pr-4 py-3 text-sm text-vms-texto
+                      placeholder:text-vms-dark-5 outline-none transition-colors
+                      border-white/5 focus:border-vms-primaria"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="flex flex-col gap-1.5">
               <label className="text-vms-texto-2 text-xs font-medium flex items-center gap-1.5">
-                <MessageCircle size={14} />
-                WhatsApp
+                <Globe size={14} />
+                YouTube (URL)
               </label>
               <div className="relative">
-                <MessageCircle size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-vms-muted" />
+                <Globe size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-vms-muted" />
                 <input
                   type="text"
-                  placeholder="(11) 91234-5678"
-                  value={form.whatsapp}
-                  onChange={(e) => updateForm("whatsapp", e.target.value)}
+                  placeholder="youtube.com/@seucanal ou link do vídeo"
+                  value={form.youtube}
+                  onChange={(e) => updateForm("youtube", e.target.value)}
                   className="w-full border bg-white/5 rounded-[12px] pl-10 pr-4 py-3 text-sm text-vms-texto
                     placeholder:text-vms-dark-5 outline-none transition-colors
                     border-white/5 focus:border-vms-primaria"
@@ -1198,42 +1501,60 @@ function CriarSiteContent() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-vms-texto-2 text-xs font-medium flex items-center gap-1.5">
-                <Camera size={14} />
-                Instagram
-              </label>
-              <div className="relative">
-                <Camera size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-vms-muted" />
-                <input
-                  type="text"
-                  placeholder="@seunegocio ou link do perfil"
-                  value={form.instagram}
-                  onChange={(e) => updateForm("instagram", e.target.value)}
-                  className="w-full border bg-white/5 rounded-[12px] pl-10 pr-4 py-3 text-sm text-vms-texto
-                    placeholder:text-vms-dark-5 outline-none transition-colors
-                    border-white/5 focus:border-vms-primaria"
-                />
+            <div className="border-t border-white/5 pt-4">
+              <p className="text-vms-texto-2 text-xs font-semibold mb-3 flex items-center gap-1.5">
+                <ImageIcon size={14} />
+                Identidade Visual (opcional)
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-vms-muted text-[11px]">Logo URL</label>
+                  <input
+                    type="url"
+                    placeholder="https://exemplo.com/logo.png"
+                    value={form.logo_url}
+                    onChange={(e) => updateForm("logo_url", e.target.value)}
+                    className="w-full border bg-white/5 rounded-[8px] px-3 py-2 text-sm text-vms-texto
+                      placeholder:text-vms-dark-5 outline-none transition-colors
+                      border-white/5 focus:border-vms-primaria"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-vms-muted text-[11px]">Favicon URL</label>
+                  <input
+                    type="url"
+                    placeholder="https://exemplo.com/favicon.ico"
+                    value={form.favicon_url}
+                    onChange={(e) => updateForm("favicon_url", e.target.value)}
+                    className="w-full border bg-white/5 rounded-[8px] px-3 py-2 text-sm text-vms-texto
+                      placeholder:text-vms-dark-5 outline-none transition-colors
+                      border-white/5 focus:border-vms-primaria"
+                  />
+                </div>
               </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-vms-texto-2 text-xs font-medium flex items-center gap-1.5">
-                <Link2 size={14} />
-                Facebook
+                <span>🔤</span> Fonte principal do site
               </label>
-              <div className="relative">
-                <Link2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-vms-muted" />
-                <input
-                  type="text"
-                  placeholder="facebook.com/seunegocio"
-                  value={form.facebook}
-                  onChange={(e) => updateForm("facebook", e.target.value)}
-                  className="w-full border bg-white/5 rounded-[12px] pl-10 pr-4 py-3 text-sm text-vms-texto
-                    placeholder:text-vms-dark-5 outline-none transition-colors
-                    border-white/5 focus:border-vms-primaria"
-                />
-              </div>
+              <select
+                value={form.fonte_principal}
+                onChange={(e) => updateForm("fonte_principal", e.target.value)}
+                className="w-full border bg-white/5 rounded-[10px] px-4 py-3 text-sm text-vms-texto
+                  outline-none transition-colors cursor-pointer
+                  border-white/5 focus:border-vms-primaria appearance-none"
+                style={{ fontFamily: form.fonte_principal }}
+              >
+                {FONTES_DISPONIVEIS.map((fonte) => (
+                  <option key={fonte.value} value={fonte.value} style={{ fontFamily: fonte.value }}>
+                    {fonte.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-vms-muted text-[11px]">
+                Preview: <span style={{ fontFamily: form.fonte_principal }} className="text-vms-texto font-medium">{form.fonte_principal}</span>
+              </p>
             </div>
           </div>
         );
@@ -1297,16 +1618,43 @@ function CriarSiteContent() {
                       {form.tema === "claro" ? "☀️ Claro" : "🌙 Escuro"}
                     </span>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="text-vms-muted text-xs">Fonte</span>
+                    <span className="text-vms-texto text-xs font-medium" style={{ fontFamily: form.fonte_principal }}>
+                      {form.fonte_principal}
+                    </span>
+                  </div>
                 </div>
               </ReviewCard>
 
-              <ReviewCard icon={<ImageIcon size={16} />} title="Logo">
+              <ReviewCard icon={<ImageIcon size={16} />} title="Logo e Identidade">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-vms-texto-2 text-xs">
+                    {form.tem_logo
+                      ? logoPreview
+                        ? "Logo enviado ✓"
+                        : "Logo será enviado"
+                      : form.logo_url
+                        ? "Logo URL informado ✓"
+                        : "Será gerado pela IA ✨"}
+                  </span>
+                  {form.logo_url && (
+                    <span className="text-vms-muted text-[11px] truncate max-w-[200px]">{form.logo_url}</span>
+                  )}
+                  {form.favicon_url && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-vms-muted text-[11px]">Favicon:</span>
+                      <span className="text-vms-blue-light text-[11px] truncate max-w-[180px]">{form.favicon_url}</span>
+                    </div>
+                  )}
+                </div>
+              </ReviewCard>
+
+              <ReviewCard icon={<Building2 size={16} />} title="Vinculação">
                 <span className="text-vms-texto-2 text-xs">
-                  {form.tem_logo
-                    ? logoPreview
-                      ? "Logo enviado ✓"
-                      : "Logo será enviado"
-                    : "Será gerado pela IA ✨"}
+                  {form.cliente_id
+                    ? `Cliente vinculado: ${clienteSearchTerm} ✓`
+                    : "Sem vinculação de cliente"}
                 </span>
               </ReviewCard>
 
@@ -1320,6 +1668,12 @@ function CriarSiteContent() {
 
               <ReviewCard icon={<Share2 size={16} />} title="Redes Sociais">
                 <div className="flex flex-col gap-1.5">
+                  {form.whatsapp && (
+                    <div className="flex items-center gap-2">
+                      <MessageCircle size={12} className="text-vms-muted" />
+                      <span className="text-vms-texto-2 text-xs">{form.whatsapp}</span>
+                    </div>
+                  )}
                   {form.instagram && (
                     <div className="flex items-center gap-2">
                       <Camera size={12} className="text-vms-muted" />
@@ -1332,13 +1686,19 @@ function CriarSiteContent() {
                       <span className="text-vms-texto-2 text-xs">{form.facebook}</span>
                     </div>
                   )}
-                  {form.whatsapp && (
+                  {form.x_twitter && (
                     <div className="flex items-center gap-2">
-                      <MessageCircle size={12} className="text-vms-muted" />
-                      <span className="text-vms-texto-2 text-xs">{form.whatsapp}</span>
+                      <Share2 size={12} className="text-vms-muted" />
+                      <span className="text-vms-texto-2 text-xs">{form.x_twitter}</span>
                     </div>
                   )}
-                  {!form.instagram && !form.facebook && !form.whatsapp && (
+                  {form.youtube && (
+                    <div className="flex items-center gap-2">
+                      <Globe size={12} className="text-vms-muted" />
+                      <span className="text-vms-texto-2 text-xs truncate max-w-[200px]">{form.youtube}</span>
+                    </div>
+                  )}
+                  {!form.whatsapp && !form.instagram && !form.facebook && !form.x_twitter && !form.youtube && (
                     <span className="text-vms-muted text-xs">Nenhuma rede social informada</span>
                   )}
                 </div>
@@ -1439,7 +1799,7 @@ function CriarSiteContent() {
           style={{ background: bgGlow, transition: "background 0.8s ease" }}
         >
           <div
-            className={`bg-vms-card/80 backdrop-blur-xl border border-white/5 rounded-[16px] p-8
+            className={`bg-vms-card border border-white/5 rounded-[16px] p-8
               shadow-[0_8px_32px_rgba(0,0,0,0.4)]
               ${isAnimating ? slideOut : slideIn}
               transition-shadow duration-700`}
@@ -1494,7 +1854,7 @@ function CriarSiteContent() {
 
       {showOverlay && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center
-          bg-vms-fundo/95 backdrop-blur-xl">
+          bg-vms-fundo">
           <div className="flex flex-col items-center gap-6 max-w-sm text-center">
             <div className="relative">
               <div className="w-16 h-16 rounded-full bg-vms-primaria/10 flex items-center justify-center">

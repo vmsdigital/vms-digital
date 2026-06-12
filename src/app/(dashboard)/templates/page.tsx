@@ -203,12 +203,12 @@ function TemplateCard({ template, destaque = false, isPlanoPago = false }: { tem
               Preview
             </button>
             {bloqueado ? (
-              <button className="inline-flex items-center gap-1.5 rounded-[8px] bg-white/10 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-white cursor-not-allowed">
+              <button className="inline-flex items-center gap-1.5 rounded-[8px] bg-white/10 px-3 py-1.5 text-xs font-medium text-white cursor-not-allowed">
                 <Lock size={13} />
                 PRO
               </button>
             ) : (
-              <button className="inline-flex items-center gap-1.5 rounded-[8px] bg-white/10 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 transition-all">
+              <button className="inline-flex items-center gap-1.5 rounded-[8px] bg-white/10 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 transition-all">
                 <Sparkles size={13} />
                 Usar
               </button>

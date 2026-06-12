@@ -27,7 +27,7 @@ interface BrandBookPreviewProps {
 export function BrandBookPreview({ brand, nomeEmpresa, loading }: BrandBookPreviewProps) {
   if (loading) {
     return (
-      <div className="rounded-[14px] border border-white/5 bg-vms-card/80 backdrop-blur-xl p-6 animate-pulse">
+      <div className="rounded-[14px] border border-white/5 bg-vms-card p-6 animate-pulse">
         <div className="h-4 bg-white/5 rounded w-1/3 mb-4" />
         <div className="flex gap-3 mb-4">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -43,7 +43,7 @@ export function BrandBookPreview({ brand, nomeEmpresa, loading }: BrandBookPrevi
   if (!brand) return null;
 
   return (
-    <div className="rounded-[14px] border border-vms-primaria/20 bg-vms-card/80 backdrop-blur-xl p-6 shadow-[0_0_30px_rgba(170,255,0,0.05)]">
+    <div className="rounded-[14px] border border-vms-primaria/20 bg-vms-card p-6 shadow-[0_0_30px_rgba(170,255,0,0.05)]">
       <div className="flex items-center gap-2 mb-4">
         <div className="w-2 h-2 rounded-full bg-vms-primaria animate-pulse" />
         <h3 className="text-vms-primaria text-xs font-semibold uppercase tracking-wider">

@@ -22,8 +22,10 @@ import {
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { UpgradeModal } from "@/components/ui/UpgradeModal";
 import { createClient } from "@/lib/supabase/client";
 import { NICHOS } from "@/lib/constants";
+import { podeUsarAgenteIA } from "@/lib/plan-limits";
 import type { AgenteTarefa } from "@/types/database";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
@@ -48,6 +50,20 @@ export default function AgentePage() {
   const [iniciando, setIniciando] = useState(false);
   const [tarefas, setTarefas] = useState<AgenteTarefa[]>([]);
   const [tarefaExpandida, setTarefaExpandida] = useState<string | null>(null);
+  const [bloqueado, setBloqueado] = useState(false);
+
+  useEffect(() => {
+    async function checkPlano() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from("usuarios").select("plano,cargo").eq("id", user.id).single();
+      if (data && !podeUsarAgenteIA(data.plano, data.cargo)) {
+        setBloqueado(true);
+      }
+    }
+    checkPlano();
+  }, []);
   const [erro, setErro] = useState("");
 
   const carregarTarefas = useCallback(async () => {
@@ -120,6 +136,21 @@ export default function AgentePage() {
 
   const temAtiva = tarefas.some((t) => t.status === "prospectando" || t.status === "gerando");
 
+  if (bloqueado) {
+    return (
+      <DashboardLayout title="Agente IA">
+        <div className="max-w-5xl mx-auto flex flex-col items-center justify-center py-20">
+          <div className="w-20 h-20 rounded-2xl bg-vms-primaria/10 flex items-center justify-center mb-6">
+            <Bot className="w-10 h-10 text-vms-primaria" />
+          </div>
+          <h2 className="text-xl font-bold text-vms-texto mb-2">Agente IA — Piloto Automático</h2>
+          <p className="text-vms-muted text-sm text-center max-w-md mb-6">Esse recurso prospecta e cria sites automaticamente para você. Disponível apenas no plano Pro.</p>
+          <a href="/planos" className="px-6 py-3 rounded-xl bg-vms-primaria text-black font-semibold text-sm hover:brightness-110 transition-all">Ver planos</a>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout title="Agente IA">
       <div className="max-w-5xl mx-auto flex flex-col gap-8">
@@ -154,12 +185,15 @@ export default function AgentePage() {
 
             <div>
               <label className="block text-sm font-medium text-vms-muted mb-1.5">Cidade</label>
-              <Input
-                value={cidade}
-                onChange={(e) => setCidade(e.target.value)}
-                placeholder="Ex: São Paulo, SP"
-                icon={<MapPin size={16} />}
-              />
+              <div className="relative">
+                <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-vms-muted" />
+                <Input
+                  value={cidade}
+                  onChange={(e) => setCidade(e.target.value)}
+                  placeholder="Ex: São Paulo, SP"
+                  className="pl-9"
+                />
+              </div>
             </div>
 
             <div>

@@ -41,7 +41,7 @@ export function ProspecaoSpyAnimation({ isSearching }: { isSearching: boolean })
   const CurrentIcon = SPY_MESSAGES[msgIndex].icon;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80">
       <div className="text-center max-w-sm px-6">
         <div className="relative w-32 h-32 mx-auto mb-8">
           <div className="absolute inset-0 rounded-full border border-vms-primaria/20" />

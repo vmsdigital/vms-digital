@@ -22,7 +22,7 @@ function LoginForm() {
     const timer = setTimeout(() => {
       setShowIntro(false);
       setIntroComplete(true);
-    }, 3200);
+    }, 1200);
     return () => clearTimeout(timer);
   }, []);
 
@@ -89,17 +89,19 @@ function LoginForm() {
     <>
       {(showIntro || !introComplete) && (
         <div className={`intro-overlay${introComplete ? " fade-out-complete" : ""}`}>
-          <img
-            src="/animacao-entrada.gif"
+          <Image
+            src="/logo-animacao.svg"
             alt="Startzy"
-            className="intro-gif"
+            width={100}
+            height={47}
+            priority
+            className="animate-fade-in-up"
           />
         </div>
       )}
       <div className={`relative flex min-h-screen items-center justify-center overflow-hidden bg-vms-fundo px-4${showIntro ? " login-hidden" : ""}`}>
-      <div className="absolute inset-0 bg-grid opacity-40" />
-      <div className="absolute left-1/4 top-1/4 h-[500px] w-[500px] rounded-full bg-vms-primaria/[0.03] blur-[140px]" style={{ animation: "glow-breathe 8s ease-in-out infinite" }} />
-      <div className="absolute bottom-1/4 right-1/4 h-[400px] w-[400px] rounded-full bg-vms-primaria/[0.02] blur-[100px]" style={{ animation: "glow-breathe 10s ease-in-out infinite 2s" }} />
+      <div className="absolute left-1/4 top-1/4 h-[500px] w-[500px] rounded-full bg-vms-primaria/[0.02] blur-[140px]" />
+      <div className="absolute bottom-1/4 right-1/4 h-[400px] w-[400px] rounded-full bg-vms-primaria/[0.015] blur-[100px]" />
 
       <div className="animate-scale-in relative w-full max-w-[420px] rounded-[18px] glass p-8 glow-primaria-sm">
         <div className="mb-8 text-center">

@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 const ASAAS_API_URL =
   process.env.ASAAS_API_URL || "https://api.asaas.com/v3";
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY || "";
+const STARTZY_SPLIT_WALLET_ID = process.env.STARTZY_SPLIT_WALLET_ID || "";
+const STARTZY_SPLIT_PERCENT = 5;
 
 export async function POST(request: NextRequest) {
   try {
@@ -83,6 +85,17 @@ export async function POST(request: NextRequest) {
 
     if (billingType === "CREDIT_CARD") {
       paymentPayload.dueDate = new Date(Date.now() + 1 * 86400000).toISOString().split("T")[0];
+    }
+
+    // Split 5% Startzy em todos os pagamentos
+    if (STARTZY_SPLIT_WALLET_ID) {
+      paymentPayload.split = [
+        {
+          walletId: STARTZY_SPLIT_WALLET_ID,
+          fixedValue: null,
+          percentualValue: STARTZY_SPLIT_PERCENT,
+        },
+      ];
     }
 
     const response = await fetch(`${ASAAS_API_URL}/payments`, {

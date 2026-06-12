@@ -157,7 +157,7 @@ export default function Topbar({ title, onMenuToggle }: TopbarProps) {
     : "VM";
 
   return (
-    <header className="flex h-[64px] shrink-0 items-center border-b border-vms-borda bg-vms-sidebar/80 backdrop-blur-xl px-[22px] relative z-20">
+    <header className="flex h-[64px] shrink-0 items-center border-b border-vms-borda bg-vms-sidebar px-[22px] relative z-20">
       <button
         onClick={onMenuToggle}
         className="mr-3 text-vms-ghost hover:text-vms-texto lg:hidden transition-colors"

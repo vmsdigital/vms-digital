@@ -31,7 +31,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { LoadingIA } from "@/components/ui/LoadingIA";
 import { createClient } from "@/lib/supabase/client";
 import { NICHOS } from "@/lib/constants";
-import { podeCriarSite } from "@/lib/plan-limits";
+import { podeCriarSite, podePublicar } from "@/lib/plan-limits";
 
 const STEP_CONFIG = [
   { number: 1, label: "Informações", icon: Building2 },
@@ -256,7 +256,7 @@ function CriarSiteContent() {
       .eq("criador_id", user.id);
 
     const plano = (user as unknown as { plano?: string }).plano || "gratuito";
-    if (!podeCriarSite(plano as "gratuito" | "starter" | "pro" | "agency", count ?? 0)) {
+    if (!podeCriarSite(plano as "gratuito" | "starter" | "pro" | "admin", count ?? 0)) {
       setShowOverlay(false);
       setGerandoSite(false);
       return;
@@ -307,7 +307,7 @@ function CriarSiteContent() {
       nome_site: form.nome_empresa,
       nicho: form.nicho || "outro",
       slug: `${slug}.startzy.com.br`,
-      publicado: true,
+      publicado: podePublicar(plano as "gratuito" | "starter" | "pro" | "admin"),
       dados_json: {
         descricao: form.descricao,
         objetivo: form.objetivo,
@@ -447,7 +447,7 @@ function CriarSiteContent() {
 
         <div
           className={`
-            bg-vms-card/80 backdrop-blur-xl border border-white/5 rounded-[14px] p-8
+            bg-vms-card border border-white/5 rounded-[14px] p-8
             shadow-[0_8px_32px_rgba(0,0,0,0.4)]
             transition-opacity duration-200
             ${transitioning ? "opacity-0" : "opacity-100"}
@@ -1141,7 +1141,7 @@ function CriarSiteContent() {
 
       {showOverlay && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center
-          bg-vms-fundo/95 backdrop-blur-xl">
+          bg-vms-fundo">
           <div className="flex flex-col items-center gap-6 max-w-sm text-center">
             <div className="relative">
               <div className="w-16 h-16 rounded-full bg-vms-primaria/10 flex items-center justify-center">

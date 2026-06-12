@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
-import { Inter, DM_Mono } from "next/font/google";
+import { Inter, DM_Mono, Geist } from "next/font/google";
 import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const inter = Inter({
   variable: "--font-inter",
@@ -88,7 +91,7 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${inter.variable} ${dmMono.variable} h-full antialiased`}
+      className={cn("h-full", "antialiased", inter.variable, dmMono.variable, "font-sans", geist.variable)}
     >
       <head>
         <script
